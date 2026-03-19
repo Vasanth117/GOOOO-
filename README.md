@@ -41,7 +41,8 @@ E:\GOO\
     ├── .env.example                 ← Env variable template
     ├── requirements.txt             ← Python dependencies
     ├── run.py                       ← Server entry point
-    └── app\
+    ├── test_services.py             ← Service integrity test (AI/Weather)
+    └── app\                         ← Backend logic
         ├── main.py                  ← FastAPI app, CORS, lifespan, routers
         ├── config.py                ← Pydantic settings from .env
         ├── database.py              ← MongoDB + Beanie ODM initialization
@@ -104,6 +105,14 @@ E:\GOO\
             ├── score_decay_job.py   ← Nightly score decay for inactivity
             ├── mission_job.py       ← Daily mission generation + expiry check
             └── leaderboard_job.py   ← 6-hourly leaderboard cache rebuild
+└── frontend\                        ← Vite + React Frontend
+    ├── public\                      ← Static assets (Logos/Images)
+    ├── src\                         ← React Source Code
+    │   ├── assets\                  ← Imported assets
+    │   ├── components\              ← Reusable UI components
+    │   └── pages\                   ← Page-level components (Landing Page)
+    ├── package.json                 ← Node dependencies
+    └── vite.config.js               ← Vite/Proxy configuration
 ```
 
 ---
@@ -118,7 +127,7 @@ E:\GOO\
 | **Database** | MongoDB (local) |
 | **ODM** | Beanie (async, built on Motor) |
 | **Auth** | JWT (python-jose) + bcrypt (passlib) |
-| **AI** | Google Gemini API |
+| **AI** | Llama 3.3 (via Groq Cloud API) |
 | **Weather** | OpenWeather API |
 | **Scheduler** | APScheduler |
 | **Validation** | Pydantic v2 |
@@ -166,6 +175,29 @@ Interactive Docs: `http://localhost:8000/docs`
 | `GET` | `/` | ✅ Any | Get all notifications |
 | `PATCH` | `/:id/read` | ✅ Any | Mark one as read |
 | `PATCH` | `/read-all` | ✅ Any | Mark all as read |
+
+---
+
+## 🗺️ FEATURE ROADMAP
+
+### 🧠 BACKEND (The Smart Engine)
+| Feature | Description | Status |
+| :--- | :--- | :--- |
+| **Llama 3 AI Advisor** | Predictive farming tips via Groq Cloud API | ✅ Done |
+| **Proof Auto-Vision** | AI verification of farming photos via Llama 3.2 Vision | ✅ Done |
+| **Gamification Engine** | Async logic for Score, Tiers, Streaks, and Badges | ✅ Done |
+| **Live Weather Sync** | Dynamic context injection into AI prompts via OpenWeather | ✅ Done |
+| **Background Cron** | Auto-generation of missions & nightly score decay | ✅ Done |
+| **Security Guard** | JWT-based auth with strict Role-Based Access Control | ✅ Done |
+
+### 🎨 FRONTEND (The Visual Journey)
+| Feature | Description | Status |
+| :--- | :--- | :--- |
+| **Farmer Dashboard** | Real-time weather, stats cards, and AI chat bubble | 🏗️ Next |
+| **Mission Hub** | Interactive card stack for tracking eco-tasks | 🏗️ Next |
+| **Social Feed** | Community photos, likes, and farmer following | 🏗️ Next |
+| **Marketplace** | Reward store for redeeming eco-coins for products | 🔲 Planned |
+| **Admin Panel** | Management suite for users, fraud, and analytics | 🔲 Planned |
 
 ---
 
@@ -263,15 +295,21 @@ LIMITS: min=0, max=10,000
 - MongoDB running locally on port 27017
 
 ### Steps
-```bash
-# 1. Navigate to backend
+# --- BACKEND ---
+# 1. Navigate and Install
 cd E:\GOO\backend
-
-# 2. Install dependencies
 pip install -r requirements.txt
 
-# 3. Run the server
+# 2. Run the server
 python run.py
+
+# --- FRONTEND ---
+# 1. Navigate and Install
+cd E:\GOO\frontend
+npm install
+
+# 2. Run the dev server
+npm run dev
 ```
 
 ### Server URLs
@@ -339,12 +377,14 @@ python run.py
 - [x] Fraud flag management (Review and Resolve behavior anomalies)
 - [x] Platform analytics (Real-time dashboard stats)
 
-### 🔲 Phase 7 — Frontend
-- [ ] Framework decision (React / Next.js)
-- [ ] Farmer dashboard UI
-- [ ] Gamification UI
-- [ ] Social feed UI
-- [ ] Marketplace UI
+### ✅ Phase 7 — Frontend (IN PROGRESS)
+- [x] Framework: Vite + React (Legacy-free, high speed)
+- [x] Premium Landing Page (Eco-luxury design)
+- [x] Organic Tree Logo Integration
+- [ ] Authentication UI (Login/Register)
+- [ ] Farmer Dashboard UI
+- [ ] Mission Hub UI
+- [ ] Social Feed & Leaderboard UI
 
 ---
 

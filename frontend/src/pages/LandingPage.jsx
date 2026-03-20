@@ -305,12 +305,57 @@ const LandingPage = () => {
                 </div>
             </section>
 
-            <section style={{ height: '80vh', background: 'var(--primary)', color: 'white', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
-                <h2 style={{ fontSize: '5rem', marginBottom: '2rem' }}>Ready to Scale?</h2>
-                <p style={{ maxWidth: '700px', fontSize: '1.2rem', marginBottom: '3rem', opacity: 0.9 }}>Join the fastest-growing agri-tech ecosystem in the world today. Start your 30-day premium expert trial for free.</p>
-                <div style={{ display: 'flex', gap: '2rem' }}>
-                    <button className="btn-cta" style={{ background: '#d4af37' }}>Create My Farm Profile</button>
-                    <button className="btn-cta" style={{ background: 'white', color: '#2d5a27' }}>Connect with Specialist</button>
+            <section style={{ 
+                padding: '8rem 5%', 
+                background: 'var(--color-primary)', 
+                color: 'white', 
+                display: 'flex', 
+                flexDirection: 'column', 
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                textAlign: 'center',
+                position: 'relative',
+                overflow: 'hidden'
+            }}>
+                {/* Subtle Decorative Elements */}
+                <div style={{ position: 'absolute', top: '-10%', left: '-10%', width: '40%', height: '40%', background: 'rgba(255,255,255,0.05)', borderRadius: '50%', filter: 'blur(100px)' }} />
+                <div style={{ position: 'absolute', bottom: '-10%', right: '-10%', width: '30%', height: '30%', background: 'rgba(74, 222, 128, 0.1)', borderRadius: '50%', filter: 'blur(80px)' }} />
+
+                <motion.h2 
+                    initial={{ opacity: 0, y: 30 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    style={{ fontSize: '3.5rem', marginBottom: '1.5rem', fontWeight: 1000, letterSpacing: '-0.02em', position: 'relative' }}
+                >
+                    Ready to Scale?
+                </motion.h2>
+                <motion.p 
+                    initial={{ opacity: 0, y: 30 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: 0.1 }}
+                    style={{ maxWidth: '800px', fontSize: '1.2rem', marginBottom: '3rem', opacity: 0.9, lineHeight: 1.6, fontWeight: 700, position: 'relative' }}
+                >
+                    Join the fastest-growing agri-tech ecosystem in the world today.<br /> 
+                    Start your 30-day premium expert trial for free.
+                </motion.p>
+                <div style={{ display: 'flex', gap: '2rem', position: 'relative' }}>
+                    <motion.button 
+                        whileHover={{ scale: 1.05, boxShadow: '0 20px 40px rgba(0,0,0,0.2)' }}
+                        whileTap={{ scale: 0.95 }}
+                        className="btn-cta" 
+                        style={{ background: 'var(--color-gold)', color: 'white', border: 'none', padding: '15px 40px', fontSize: '1rem', fontWeight: 900, borderRadius: '15px', cursor: 'pointer' }}
+                    >
+                        Create My Farm Profile
+                    </motion.button>
+                    <motion.button 
+                        whileHover={{ scale: 1.05, background: 'rgba(255,255,255,0.1)' }}
+                        whileTap={{ scale: 0.95 }}
+                        className="btn-cta" 
+                        style={{ background: 'transparent', color: 'white', border: '2px solid white', padding: '15px 40px', fontSize: '1rem', fontWeight: 900, borderRadius: '15px', cursor: 'pointer' }}
+                    >
+                        Connect with Specialist
+                    </motion.button>
                 </div>
             </section>
 

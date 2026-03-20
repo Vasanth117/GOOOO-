@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mail, Lock, User, Globe, Facebook, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { Mail, Lock, User, Globe, Facebook, Eye, EyeOff, AlertCircle, Briefcase } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const AuthPage = () => {
@@ -92,11 +92,12 @@ const AuthPage = () => {
                             <input type="email" name="email" placeholder="Email" value={registerData.email} onChange={handleRegisterChange} required />
                         </div>
                         <div className="auth-input-group">
+                            <Briefcase size={16} className="auth-input-icon" />
                             <select name="role" value={registerData.role} onChange={handleRegisterChange}
-                                style={{ backgroundColor: '#f3f3f3', border: '1px solid transparent', borderRadius: '10px', padding: '14px 15px', width: '100%', fontSize: '14px', outline: 'none', color: '#555', cursor: 'pointer' }}>
-                                <option value="farmer">🌾 Farmer</option>
-                                <option value="expert">👨‍🔬 Gov / Expert</option>
-                                <option value="seller">🛒 Equipment Seller</option>
+                                style={{ backgroundColor: '#f3f3f3', border: '1px solid transparent', borderRadius: '10px', padding: '14px 15px 14px 45px', width: '100%', fontSize: '14px', outline: 'none', color: '#555', cursor: 'pointer', appearance: 'none' }}>
+                                <option value="farmer">Farmer</option>
+                                <option value="expert">Gov / Expert</option>
+                                <option value="seller">Equipment Seller</option>
                             </select>
                         </div>
                         <div className="auth-input-group" style={{ position: 'relative' }}>

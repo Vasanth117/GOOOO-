@@ -17,7 +17,6 @@ import FieldMapPage from './pages/FieldMapPage'
 import DashboardLayout from './components/DashboardLayout'
 import { PublicRoute, PrivateRoute } from './components/ProtectedRoute'
 import { Construction } from 'lucide-react'
-
 function App() {
   return (
     <Routes>
@@ -25,13 +24,12 @@ function App() {
       <Route path="/login" element={
         <PublicRoute><AuthPage /></PublicRoute>
       } />
-
       <Route element={<PrivateRoute><DashboardLayout /></PrivateRoute>}>
         <Route path="/dashboard"   element={<Dashboard />} />
         <Route path="/missions"    element={<MissionsPage />} />
         <Route path="/leaderboard" element={<LeaderboardPage />} />
         <Route path="/rewards"     element={<RewardsPage />} />
-        
+
         <Route path="/ai"          element={<AIPage />} />
         <Route path="/map"         element={<FieldMapPage />} />
         <Route path="/community"   element={<CommunityPage />} />

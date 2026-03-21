@@ -24,7 +24,10 @@ const apiRequest = async (endpoint, options = {}) => {
         body: options.body // Body is passed as-is, stringified by caller for JSON, or FormData object
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.message || data.detail || 'API Request failed');
+    if (!res.ok) {
+        console.error("API ERROR BODY:", data);
+        throw new Error(data.message || data.detail || 'API Request failed');
+    }
     return data.data;
 };
 
@@ -54,16 +57,24 @@ export const apiService = {
 
     // Missions
     getMissions: (type = 'active') => apiRequest(`/missions/${type}`),
-    joinMission: (missionId) => apiRequest(`/missions/${missionId}/join`, { method: 'POST' }),
-    submitProof: (missionId, formData) => {
-        // Mixing fetch here as it's multipart
+    startMission: (id) => apiRequest(`/missions/${id}/start`, { method: 'POST' }),
+    triggerAiMissions: () => apiRequest('/missions/ai-assign'),
+    getMissionHistory: (page = 1) => apiRequest(`/missions/history?page=${page}`),
+    getCommunityMissions: () => apiRequest('/missions/community-active'),
+    submitPeriodicReport: (formData) => {
         const token = localStorage.getItem('access_token');
-        return fetch(`${BASE_URL}/proof/submit`, {
+        // Extract params for fixed query params in the route
+        const params = new URLSearchParams();
+        for (const [key, value] of formData.entries()) {
+            if (key !== 'file') params.append(key, value);
+        }
+        return fetch(`${BASE_URL}/missions/periodic-reports?${params.toString()}`, {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${token}` },
-            body: formData
+            body: formData  // Still passing formData for the 'file' field
         }).then(res => res.json());
     },
+    getMyPeriodicReports: () => apiRequest('/missions/periodic-reports/my'),
 
     // Leaderboard
     getLeaderboard: (scope = 'national') => apiRequest(`/leaderboard/${scope}`),
@@ -89,14 +100,24 @@ export const apiService = {
 
     // Marketplace
     getProducts: (category = '') => apiRequest(`/marketplace/products${category ? `?category=${category}` : ''}`),
-    purchaseProduct: (productId) => apiRequest('/marketplace/purchase', {
+    placeOrder: (data) => apiRequest('/marketplace/orders', {
         method: 'POST',
-        body: JSON.stringify({ product_id: productId })
+        body: JSON.stringify(data)
+    }),
+    getMyOrders: () => apiRequest('/marketplace/orders/me'),
+    getSellerDashboard: () => apiRequest('/marketplace/seller/dashboard'),
+    createProduct: (data) => apiRequest('/marketplace/products', {
+        method: 'POST',
+        body: JSON.stringify(data)
+    }),
+    updateOrderStatus: (orderId, status) => apiRequest(`/marketplace/orders/${orderId}/status?status=${status}`, {
+        method: 'PATCH'
     }),
 
     // Rewards
-    getRewards: () => apiRequest('/rewards/me'),
-    redeemReward: (rewardId) => apiRequest(`/rewards/redeem/${rewardId}`, { method: 'POST' }),
+    getWallet: () => apiRequest('/rewards/wallet'),
+    buyVoucher: (data) => apiRequest('/rewards/redeem-points', { method: 'POST', body: JSON.stringify(data) }),
+    useVoucher: (voucherId) => apiRequest(`/rewards/vouchers/${voucherId}/use`, { method: 'POST' }),
 
     // Score
     getStats: () => apiRequest('/score/stats'),
@@ -137,6 +158,23 @@ export const apiService = {
         method: 'POST',
         body: JSON.stringify(data)
     }),
+
+    // ── Social & Community ──────────────────────────────────────
+    getFeed: (page = 1, postType = '') => apiRequest(`/social/feed?page=${page}${postType ? `&post_type=${postType}` : ''}`),
+    createPost: (formData) => {
+        const token = localStorage.getItem('access_token');
+        return fetch(`${BASE_URL}/social/posts`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` },
+            body: formData
+        }).then(res => res.json());
+    },
+    toggleLike: (postId) => apiRequest(`/social/posts/${postId}/like`, { method: 'POST' }),
+    addComment: (postId, content) => apiRequest(`/social/posts/${postId}/comments`, {
+        method: 'POST',
+        body: JSON.stringify({ content })
+    }),
+    getPendingVerifications: () => apiRequest('/grc/pending-verifications'),
 
     // ── User Profile & Settings ──────────────────────────────────
     getProfile: () => apiRequest('/user/me'),

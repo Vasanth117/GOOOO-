@@ -14,15 +14,20 @@ logger = logging.getLogger(__name__)
 
 
 async def get_reward_wallet(user: User) -> dict:
-    """View points balance and earned vouchers."""
+    """View points balance, earned vouchers, and unlocked badges."""
     farm = await FarmProfile.find_one(FarmProfile.farmer_id == str(user.id))
     if not farm:
-        return {"total_points": 0, "tier": "beginner", "vouchers": []}
+        return {"total_points": 0, "tier": "beginner", "vouchers": [], "badges": []}
 
+    # Fetch rewards separated by type
     vouchers = await Reward.find(
         Reward.farmer_id == str(user.id),
-        Reward.is_redeemed == False,
+        Reward.reward_type == RewardType.VOUCHER,
+        Reward.is_redeemed == False
     ).to_list()
+    
+    from app.models.badge import FarmerBadge
+    badges = await FarmerBadge.find(FarmerBadge.farmer_id == str(user.id)).to_list()
 
     return {
         "total_points": farm.sustainability_score,
@@ -33,8 +38,18 @@ async def get_reward_wallet(user: User) -> dict:
                 "title": v.description,
                 "points_cost": v.points_cost,
                 "expires_at": (v.created_at + timedelta(days=30)).isoformat(), # default 30 days
+                "metadata": v.metadata
             }
             for v in vouchers
+        ],
+        "badges": [
+            {
+                "id": str(b.id),
+                "title": b.badge_name,
+                "created_at": b.awarded_at.isoformat() if hasattr(b, 'awarded_at') else datetime.utcnow().isoformat(),
+                "metadata": {"icon": b.badge_icon, "tier": b.badge_tier}
+            }
+            for b in badges
         ]
     }
 

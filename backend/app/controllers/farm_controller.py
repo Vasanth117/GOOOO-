@@ -68,12 +68,37 @@ async def get_farm_by_id(farm_id: str) -> dict:
 
 
 async def update_farm(user: User, data: UpdateFarmRequest) -> dict:
-    farm = await FarmProfile.find_one(FarmProfile.farmer_id == str(user.id))
-    if not farm:
-        not_found("Farm profile")
+    from app.models.farm_profile import (
+        Location as LocationModel,
+        FertilizerUsage as FertilizerModel,
+        PesticideUsage as PesticideModel,
+    )
 
+    farm = await FarmProfile.find_one(FarmProfile.farmer_id == str(user.id))
+
+    # ── UPSERT: if no farm exists yet, create one with safe defaults ──
+    if not farm:
+        logger.info(f"No farm profile for user {user.id} — creating one via upsert.")
+        loc = data.location
+        farm = FarmProfile(
+            farmer_id=str(user.id),
+            farm_name=data.farm_name or f"{user.name}'s Farm",
+            location=loc if loc else LocationModel(latitude=0.0, longitude=0.0),
+            farm_size_acres=data.farm_size_acres or 0.0,
+            soil_type=data.soil_type or "loam",
+            crop_types=data.crop_types or [],
+            irrigation_type=data.irrigation_type or "manual",
+            fertilizer_usage=data.fertilizer_usage or FertilizerModel(type="organic", quantity_per_week_kg=0),
+            pesticide_usage=data.pesticide_usage or PesticideModel(type="none", quantity_per_week_liters=0),
+            farming_practices=data.farming_practices or "conventional",
+            sustainability_score=100,
+        )
+        await farm.insert()
+        await check_and_award_badges(str(user.id))
+        return _farm_to_dict(farm)
+
+    # ── UPDATE existing farm profile ──
     update_data = data.model_dump(exclude_none=True)
-    score_delta = 0
 
     # Score adjustments based on what changed
     if "pesticide_usage" in update_data:
@@ -85,7 +110,8 @@ async def update_farm(user: User, data: UpdateFarmRequest) -> dict:
             await update_score(str(user.id), ScoreChangeReason.ORGANIC_FERTILIZER,
                                description="Switched to no pesticide")
 
-    if "farming_practices" in update_data and data.farming_practices.value == "organic":
+    # farming_practices is a plain lowercased string
+    if "farming_practices" in update_data and update_data["farming_practices"] == "organic":
         await update_score(str(user.id), ScoreChangeReason.ORGANIC_FERTILIZER,
                            description="Switched to organic farming")
 
@@ -96,14 +122,19 @@ async def update_farm(user: User, data: UpdateFarmRequest) -> dict:
     )
     farm.history_logs.append(log_entry)
 
-    # Apply updates
+    # Apply updates — handle Location dict → Location model
     for key, value in update_data.items():
-        setattr(farm, key, value)
+        if key == "location" and isinstance(value, dict):
+            setattr(farm, key, LocationModel(**value))
+        else:
+            setattr(farm, key, value)
+
     farm.updated_at = datetime.utcnow()
     await farm.save()
 
     await check_and_award_badges(str(user.id))
     return _farm_to_dict(farm)
+
 
 
 async def weekly_checkin(user: User, data: WeeklyCheckinRequest) -> dict:

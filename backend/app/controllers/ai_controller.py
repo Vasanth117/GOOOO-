@@ -10,6 +10,7 @@ logger = logging.getLogger(__name__)
 
 
 from fastapi import Response
+from fastapi.encoders import jsonable_encoder
 from app.services import ai_service, weather_service
 from app.schemas.ai_schema import AdvisorChatRequest, CropRecommendationRequest, TTSRequest
 
@@ -18,18 +19,22 @@ async def get_advisor_advice(user: User, data: AdvisorChatRequest) -> dict:
     farm = await FarmProfile.find_one(FarmProfile.farmer_id == str(user.id))
     
     # Contextual check: weather is only fetched if needed or requested
-    # But for simplicity, we provide the basic farm profile.
-    
+    # Strip PydanticObjectIds and convert Enums to strings
+    farm_ctx = {}
+    if farm:
+        # Exclude IDs from model_dump as they cause serialization issues
+        farm_ctx = jsonable_encoder(farm.model_dump(exclude={"id", "revision_id"}))
+        farm_ctx["id"] = str(farm.id)
+
     context = {
         "user_name": user.name,
-        "farm_profile": farm.model_dump() if farm else None,
+        "farm_profile": farm_ctx,
         "preferences": user.preferences or {},
         "external_data": data.context or {}
     }
 
-    # Fetch weather if intent usually needs it, or just let AI service handle it via 'weather_service'
+    # Fetch weather if intent usually needs it
     if farm and farm.location:
-        # We can pre-fetch weather here if we want to be proactive
         lat, lon = farm.location.latitude, farm.location.longitude
         weather_ctx = await weather_service.get_weather_data(lat, lon)
         context["current_weather"] = weather_ctx

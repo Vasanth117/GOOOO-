@@ -120,6 +120,10 @@ async def global_exception_handler(request: Request, exc: Exception):
     # Log the full error on backend
     logger.error(f"Unhandled error on {request.url}: {detail}", exc_info=True)
     
+    # Also write to a debug file we can read
+    with open("error_traceback.txt", "a") as f:
+        f.write(f"\n{'='*80}\nERROR ON {request.url}\n{traceback.format_exc()}\n")
+
     resp = JSONResponse(
         status_code=status_code,
         content={
@@ -130,7 +134,11 @@ async def global_exception_handler(request: Request, exc: Exception):
         }
     )
     # Manual CORS for errors
-    resp.headers["Access-Control-Allow-Origin"] = "http://localhost:3000"
+    origin = request.headers.get("origin")
+    if origin in settings.allowed_origins_list:
+        resp.headers["Access-Control-Allow-Origin"] = origin
+    else:
+        resp.headers["Access-Control-Allow-Origin"] = "*"
     resp.headers["Access-Control-Allow-Credentials"] = "true"
     return resp
 

@@ -21,6 +21,17 @@ else:
 
 ELEVENLABS_URL = "https://api.elevenlabs.io/v1/text-to-speech"
 DEFAULT_VOICE_ID = "21m00Tcm4TlvDq8ikWAM"
+ 
+def _clean_json_response(content: str) -> str:
+    """Strips markdown code blocks (```json ... ```) from the LLM output if present."""
+    content = content.strip()
+    if content.startswith("```json"):
+        content = content[7:]
+    if content.startswith("```"):
+        content = content[3:]
+    if content.endswith("```"):
+        content = content[:-3]
+    return content.strip()
 
 # ─── YOLOv8 CROP DISEASE MODEL ────────────────────────────────
 _yolo_model = None
@@ -81,6 +92,7 @@ async def get_farming_advice(user_query: str, context: dict) -> dict:
         "\n- 'suggestions': Exactly 3 helpful follow-up questions (strings only). MUST be in the user's Primary Language."
         "\n- 'detected_intent': One of 'onboarding', 'advice', 'weather', 'disease'."
         "\n- 'audio_trigger': boolean (true to read the response out loud)."
+        "\n\nCRITICAL: You MUST respond with PURE JSON only. DO NOT wrap the JSON in markdown code blocks (e.g. ```json). Your response must begin with '{' and end with '}'."
     )
 
     clean_context = {
@@ -111,8 +123,8 @@ async def get_farming_advice(user_query: str, context: dict) -> dict:
             temperature=0.7
         )
         content = chat_completion.choices[0].message.content
-        logger.info(f"Expert result: {content}")
-        return json.loads(content)
+        logger.info(f"Expert Raw Content: {content}")
+        return json.loads(_clean_json_response(content))
     except Exception as e:
         logger.error(f"Groq Expert Error: {e}")
         return _mock_advice(f"AI Service Temporarily Unstable: {str(e)}")
@@ -169,7 +181,7 @@ async def analyze_crop_health(image_data: bytes, user_query: Optional[str] = Non
                     model=VISION_MODEL,
                     response_format={"type": "json_object"},
                 )
-                v = json.loads(validation.choices[0].message.content)
+                v = json.loads(_clean_json_response(validation.choices[0].message.content))
                 is_plant = v.get("is_plant", False)
                 if not is_plant:
                     return {
@@ -217,7 +229,8 @@ Respond ONLY with this exact JSON:
                 response_format={"type": "json_object"},
                 temperature=0.4
             )
-            result = json.loads(response.choices[0].message.content)
+            content = response.choices[0].message.content
+            result = json.loads(_clean_json_response(content))
             result["confidence"] = round(yolo_confidence * 100, 1)
             result["is_valid_plant"] = True
             return result
@@ -274,6 +287,96 @@ async def generate_voice_advice(text: str, voice_id: str = "pNInz6obpg8nEByWQX2t
     except Exception as e:
         logger.error(f"Voice generation exception: {e}")
         return None
+
+
+async def analyze_periodic_report(image_data: bytes, report_text: str) -> dict:
+    """
+    Analyzes a peridoic report (3-day cycle) to detect:
+    1. Abnormal growth patterns (suggesting chemical use).
+    2. Verification of reported organic tasks.
+    3. Health of the crops.
+    """
+    if not client:
+        return {
+            "is_valid": True,
+            "abnormal_growth": False,
+            "confidence": 0.5,
+            "notes": "AI service offline. Provisionally approved."
+        }
+
+    base64_image = base64.b64encode(image_data).decode('utf-8')
+    system_prompt = (
+        "You are an Agricultural Auditor. Analyze the provided image of a crop and the farmer's report. "
+        "Your goal is to detect if the growth looks UNNATURAL for its stage or if there are signs of chemical use "
+        "(e.g., specific chemical burn patterns, unnatural deep colors but thin stems, or growth spikes "
+        "inconsistent with organic methods). "
+        "\n\nSTRICT JSON output format (PURE JSON ONLY, NO MARKDOWN WRAPPERS): "
+        "{\"abnormal_growth\": boolean, \"organic_consistency_score\": 0-100, \"health_score\": 0-100, \"analysis_notes\": \"string\"}"
+    )
+
+    user_prompt = f"FARMER REPORT: {report_text}"
+    
+    try:
+        response = await client.chat.completions.create(
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": user_prompt},
+                        {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}},
+                    ],
+                }
+            ],
+            model=VISION_MODEL,
+            response_format={"type": "json_object"},
+        )
+        content = response.choices[0].message.content
+        return json.loads(_clean_json_response(content))
+    except Exception as e:
+        logger.error(f"Periodic report AI analysis error: {e}")
+        return {
+            "abnormal_growth": False,
+            "organic_consistency_score": 70,
+            "health_score": 75,
+            "analysis_notes": "AI analysis timed out. Manual review suggested."
+        }
+
+
+async def generate_personalized_missions(farm_profile: dict, weather: dict) -> List[dict]:
+    """Generates 3 personalized daily missions based on farm data and climate."""
+    if not client:
+        return [
+            {"title": "Morning Hydration", "description": "Water your crops early to avoid evaporation.", "difficulty": "easy", "points": 10},
+            {"title": "Soil Check", "description": "Check soil moisture levels manually.", "difficulty": "easy", "points": 15},
+            {"title": "Leaf Inspection", "description": "Look for any signs of early pests.", "difficulty": "medium", "points": 20}
+        ]
+
+    system_prompt = (
+        "You are the GOO AI Mission Architect. Create 3 scientific, organic farming MISSONS for a farmer. "
+        "Each mission must be practical, sustainable, and directly related to their farm profile and weather. "
+        "\n\nSTRICT JSON output format (PURE JSON ONLY, NO MARKDOWN WRAPPERS): "
+        "[{\"title\": \"string\", \"description\": \"string\", \"difficulty\": \"easy/medium/hard\", \"reward_points\": int}]"
+    )
+
+    user_context = f"FARM PROFILE: {json.dumps(farm_profile)}. WEATHER: {json.dumps(weather)}"
+    
+    try:
+        response = await client.chat.completions.create(
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_context}
+            ],
+            model=TEXT_MODEL,
+            response_format={"type": "json_object"},
+            temperature=0.7
+        )
+        content = response.choices[0].message.content
+        data = json.loads(_clean_json_response(content))
+        return data if isinstance(data, list) else data.get("missions", [])
+    except Exception as e:
+        logger.error(f"AI Mission Generation Error: {e}")
+        return []
 
 
 # ─── MOCK RESPONSES ───────────────────────────────────────────

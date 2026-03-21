@@ -4,6 +4,7 @@ from app.models.farm_profile import FarmProfile
 from app.models.user import User
 from app.schemas.mission_schema import CreateMissionRequest, MissionProgressResponse, MissionHistoryResponse
 from app.utils.response_utils import error_response, not_found
+from app.services import ai_service
 from datetime import datetime, timedelta
 import logging
 
@@ -37,27 +38,38 @@ async def _enrich_progress(mp: MissionProgress) -> dict:
 
 # ─── FARMER ACTIONS ──────────────────────────────────────────
 
-async def get_active_missions(user: User) -> list:
+async def get_active_missions(user: User) -> dict:
     """Return all active/in-progress missions for a farmer, grouped by type."""
-    now = datetime.utcnow()
-    missions = await MissionProgress.find(
-        MissionProgress.farmer_id == str(user.id),
-        MissionProgress.status.in_([MissionStatus.ACTIVE, MissionStatus.IN_PROGRESS]),
-        MissionProgress.expires_at > now,
-    ).to_list()
+    try:
+        now = datetime.utcnow()
+        progress_items = await MissionProgress.find(
+            MissionProgress.farmer_id == str(user.id),
+            MissionProgress.status.in_([MissionStatus.ACTIVE, MissionStatus.IN_PROGRESS]),
+            MissionProgress.expires_at > now,
+        ).to_list()
 
-    result = []
-    for mp in missions:
-        result.append(await _enrich_progress(mp))
+        result = []
+        for mp in progress_items:
+            try:
+                enriched = await _enrich_progress(mp)
+                result.append(enriched)
+            except Exception as e:
+                logger.error(f"Error enriching mission {mp.id}: {e}")
+                continue
 
-    # Group by type
-    grouped = {"daily": [], "weekly": [], "monthly": [], "community": [], "long_term": [], "surprise": []}
-    for item in result:
-        t = item.get("mission_type", "daily")
-        if t in grouped:
-            grouped[t].append(item)
+        # Group by type
+        grouped = {"daily": [], "weekly": [], "monthly": [], "community": [], "long_term": [], "surprise": []}
+        for item in result:
+            t = item.get("mission_type", "daily")
+            if t in grouped:
+                grouped[t].append(item)
+            else:
+                grouped["daily"].append(item)
 
-    return grouped
+        return grouped
+    except Exception as e:
+        logger.error(f"FATAL error in get_active_missions: {e}", exc_info=True)
+        return {"daily": [], "weekly": [], "monthly": [], "community": [], "long_term": [], "surprise": []}
 
 
 async def get_mission_detail(mission_progress_id: str, user: User) -> dict:
@@ -218,3 +230,58 @@ async def admin_list_missions(page: int = 1, limit: int = 20) -> dict:
             for m in missions
         ]
     }
+async def auto_assign_ai_missions(user: User) -> dict:
+    """Uses AI to generate and assign missions for a specific farmer."""
+    from app.models.farm_profile import FarmProfile
+    from app.models.mission import Mission, MissionType
+    from app.models.mission_progress import MissionProgress
+    
+    farm = await FarmProfile.find_one(FarmProfile.farmer_id == str(user.id))
+    if not farm:
+        return {"daily": [], "weekly": [], "community": []}
+
+    # Mock weather or fetch from weather service
+    weather = {"temp": 28, "condition": "Sunny", "humidity": 65}
+    
+    # Check if user already has AI missions for today
+    today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+    existing_ai_missions = await MissionProgress.find(
+        MissionProgress.farmer_id == str(user.id),
+        MissionProgress.assigned_at >= today
+    ).to_list()
+    
+    # If they have fewer than 2 AI missions today, generate some
+    if len(existing_ai_missions) < 2:
+        # Call AI to generate missions
+        farm_data = {
+            "crops": farm.crop_type if hasattr(farm, 'crop_type') else "unknown",
+            "soil": farm.soil_type if hasattr(farm, 'soil_type') else "unknown",
+            "sustainability_score": farm.sustainability_score if hasattr(farm, 'sustainability_score') else 0
+        }
+        ai_missions = await ai_service.generate_personalized_missions(farm_data, weather)
+        
+        expires_at = datetime.utcnow() + timedelta(hours=24)
+        
+        for am in ai_missions:
+            # Create a SURPRISE mission template for this specific AI task
+            mission = Mission(
+                title=am.get("title", "AI Task"),
+                description=am.get("description", ""),
+                mission_type=MissionType.SURPRISE,
+                difficulty=am.get("difficulty", "medium"),
+                reward_points=am.get("reward_points", 20),
+                duration_hours=24,
+                created_by="SYSTEM_AI"
+            )
+            await mission.insert()
+            
+            mp = MissionProgress(
+                farmer_id=str(user.id),
+                mission_id=str(mission.id),
+                expires_at=expires_at
+            )
+            await mp.insert()
+            
+        logger.info(f"AI assigned missions to farmer {user.id}")
+
+    return await get_active_missions(user)

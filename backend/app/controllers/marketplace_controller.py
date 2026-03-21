@@ -166,6 +166,95 @@ async def place_order(user: User, data: CreateOrderRequest) -> dict:
     }
 
 
+async def update_order_status(order_id: str, user: User, status: OrderStatus) -> dict:
+    """Sellers update the status of an order."""
+    order = await Order.get(order_id)
+    if not order:
+        not_found("Order")
+
+    # Only the seller of this product or an admin can update status
+    if order.seller_id != str(user.id) and user.role.value != "admin":
+        error_response("Unauthorized to update this order", 403)
+
+    order.status = status
+    order.updated_at = datetime.utcnow()
+    await order.save()
+
+    # Notify buyer
+    status_emoji = {
+        OrderStatus.CONFIRMED: "✅",
+        OrderStatus.SHIPPED: "🚚",
+        OrderStatus.DELIVERED: "🎁",
+        OrderStatus.CANCELLED: "❌"
+    }.get(status, "📦")
+
+    await send_notification(
+        user_id=order.buyer_id,
+        notif_type=NotificationType.SYSTEM,
+        title=f"{status_emoji} Order Update!",
+        message=f"Your order for highly organic product has been marked as {status.value.upper()}.",
+        link=f"/marketplace",
+    )
+
+    return {
+        "order_id": str(order.id),
+        "new_status": order.status.value
+    }
+
+
+# ─── SELLER DASHBOARD ────────────────────────────────────────
+
+async def get_seller_dashboard(user: User) -> dict:
+    """Returns total income, active sales, and order history for a seller."""
+    my_products = await Product.find(Product.seller_id == str(user.id)).to_list()
+    product_ids = [str(p.id) for p in my_products]
+    
+    # Get all orders involving this seller
+    orders = await Order.find(Order.seller_id == str(user.id)).sort(-Order.placed_at).to_list()
+    
+    total_income = sum([o.total_price for o in orders if o.status != OrderStatus.CANCELLED])
+    sales_count = len(orders)
+    
+    # Serialize orders
+    orders_data = []
+    for o in orders:
+        product = next((p for p in my_products if str(p.id) == o.product_id), None)
+        orders_data.append({
+            "id": str(o.id),
+            "product_name": product.name if product else "Unknown Product",
+            "quantity": o.quantity,
+            "total_price": o.total_price,
+            "final_cash_price": o.final_cash_price,
+            "status": o.status.value,
+            "created_at": o.placed_at.isoformat()
+        })
+
+    return {
+        "total_income": total_income,
+        "sales": sales_count,
+        "recent_orders": orders_data,
+        "products": [_product_to_dict(p) for p in my_products]
+    }
+
+async def get_my_orders(user: User) -> list:
+    """Returns buyer orders for live tracking views."""
+    orders = await Order.find(Order.buyer_id == str(user.id)).sort(-Order.placed_at).to_list()
+    orders_data = []
+    for o in orders:
+        product = await Product.get(o.product_id)
+        orders_data.append({
+            "id": str(o.id),
+            "product_name": product.name if product else "Unknown Product",
+            "product_image": product.image_url if product else None,
+            "seller_id": o.seller_id,
+            "quantity": o.quantity,
+            "total_price": o.total_price,
+            "final_cash_price": o.final_cash_price,
+            "status": o.status.value,
+            "created_at": o.placed_at.isoformat()
+        })
+    return orders_data
+
 # ─── SERIALIZER ──────────────────────────────────────────────
 
 def _product_to_dict(p: Product) -> dict:

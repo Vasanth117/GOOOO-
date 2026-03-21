@@ -1,9 +1,25 @@
 from fastapi import APIRouter, Depends, File, UploadFile, Form
+from pydantic import BaseModel
 from app.controllers import user_controller
 from app.middleware.auth_middleware import get_current_user
 from app.models.user import User
 from app.utils.response_utils import success_response
 from typing import Optional
+
+
+class ChangePasswordRequest(BaseModel):
+    old_password: str
+    new_password: str
+
+
+class UpdatePreferencesRequest(BaseModel):
+    push_notifications: Optional[bool] = None
+    mission_alerts: Optional[bool] = None
+    weather_alerts: Optional[bool] = None
+    ai_suggestions: Optional[bool] = None
+    advice_priority: Optional[str] = None
+    language: Optional[str] = None
+    ai_smart_suggestions: Optional[bool] = None
 
 router = APIRouter(prefix="/user", tags=["User Profile"])
 
@@ -28,17 +44,17 @@ async def update_profile(
 
 @router.put("/password", summary="Change password")
 async def change_password(
-    data: dict,
+    data: ChangePasswordRequest,
     current_user: User = Depends(get_current_user),
 ):
-    result = await user_controller.change_password(current_user, data.get("old_password"), data.get("new_password"))
+    result = await user_controller.change_password(current_user, data.old_password, data.new_password)
     return success_response(result, "Password changed successfully")
 
 
 @router.put("/preferences", summary="Update AI and notification preferences")
 async def update_preferences(
-    data: dict,
+    data: UpdatePreferencesRequest,
     current_user: User = Depends(get_current_user),
 ):
-    result = await user_controller.update_preferences(current_user, data)
+    result = await user_controller.update_preferences(current_user, data.model_dump(exclude_none=True))
     return success_response(result, "Preferences saved")

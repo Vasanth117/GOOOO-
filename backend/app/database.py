@@ -29,6 +29,8 @@ async def connect_db():
     from app.models.fraud_flag import FraudFlag
     from app.models.verification import Verification
     from app.models.grc_member import GRCMember
+    from app.models.community_mission import CommunityMission
+    from app.models.periodic_report import PeriodicReport
     from app.models.refresh_token import RefreshToken
 
     client = AsyncIOMotorClient(settings.MONGODB_URL)
@@ -58,6 +60,8 @@ async def connect_db():
             FraudFlag,
             Verification,
             GRCMember,
+            CommunityMission,
+            PeriodicReport,
             RefreshToken,
         ],
     )

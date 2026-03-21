@@ -7,26 +7,38 @@ import {
 } from 'lucide-react';
 
 import { apiService } from '../services/apiService';
+import { useAuth } from '../context/AuthContext';
 import avatarDefault from '../assets/images/9.jpg';
+import './LeaderboardPage.css';
 
 const LeaderboardPage = () => {
-    const [scope, setScope] = useState('District'); // Local, District, State, Global
+    const { user } = useAuth();
+    const [scope, setScope] = useState('National'); // Local, District, State, Global
     const [timeframe, setTimeframe] = useState('Monthly'); // Weekly, Monthly, All-Time
     const [leaders, setLeaders] = useState([]);
+    const [myRank, setMyRank] = useState(null);
     const [loading, setLoading] = useState(true);
 
+    const load = async () => {
+        try {
+            const [data, rankData] = await Promise.all([
+                apiService.getLeaderboard(scope.toLowerCase()),
+                apiService.getMyRank()
+            ]);
+            setLeaders(data.entries || []);
+            setMyRank(rankData);
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
-        const load = async () => {
-            try {
-                const data = await apiService.getLeaderboard(scope.toLowerCase());
-                setLeaders(data || []);
-            } catch (err) {
-                console.error(err);
-            } finally {
-                setLoading(false);
-            }
-        };
         load();
+        // 🔄 REAL-TIME SYNC: Refresh every 30 seconds
+        const interval = setInterval(load, 30000);
+        return () => clearInterval(interval);
     }, [scope, timeframe]);
 
     if (loading) return <div className="loading-full"><Loader2 className="spinner" /></div>;
@@ -41,34 +53,36 @@ const LeaderboardPage = () => {
         <div className="leaderboard-page">
             
             {/* ── PODIUM SECTION ── */}
-            <div className="podium-container">
-                {podiumOrder.map((leader, i) => {
-                    const isFirst = leader.rank === 1;
-                    return (
-                        <motion.div 
-                            key={leader.id}
-                            className={`podium-spot spot-${leader.rank}`}
-                            initial={{ opacity: 0, y: 50 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: i * 0.1, duration: 0.6 }}
-                        >
-                            <div className="avatar-container">
-                                {isFirst && <motion.div className="crown-icon" animate={{ y: [0, -5, 0] }} transition={{ repeat: Infinity, duration: 2 }}><Crown size={24} fill="#d4af37" color="#d4af37" /></motion.div>}
-                                <img src={leader.avatar || avatarDefault} alt={leader.name} className="podium-avatar" />
-                                <div className="rank-badge">{leader.rank}</div>
-                            </div>
-                            <div className="podium-name">{leader.name}</div>
-                            <div className="podium-points"><Zap size={14} /> {(leader.points || 0).toLocaleString()} pts</div>
-                            <div className="podium-base" style={{ height: isFirst ? '140px' : '100px' }}>
-                                <div className="podium-stats">
-                                    <span>{leader.badges || 0} Badges</span>
-                                    <span>{leader.impact?.water || '0 L'} Water</span>
+            {leaders.length > 0 && (
+                <div className="podium-container">
+                    {podiumOrder.map((leader, i) => {
+                        const isFirst = leader.rank === 1;
+                        return (
+                            <motion.div 
+                                key={leader.id}
+                                className={`podium-spot spot-${leader.rank}`}
+                                initial={{ opacity: 0, y: 50 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: i * 0.1, duration: 0.6 }}
+                            >
+                                <div className="avatar-container">
+                                    {isFirst && <motion.div className="crown-icon" animate={{ y: [0, -5, 0] }} transition={{ repeat: Infinity, duration: 2 }}><Crown size={24} fill="#d4af37" color="#d4af37" /></motion.div>}
+                                    <img src={leader.avatar || avatarDefault} alt={leader.name} className="podium-avatar" />
+                                    <div className="rank-badge">{leader.rank}</div>
                                 </div>
-                            </div>
-                        </motion.div>
-                    );
-                })}
-            </div>
+                                <div className="podium-name">{leader.name}</div>
+                                <div className="podium-points"><Zap size={14} /> {(leader.points || 0).toLocaleString()} pts</div>
+                                <div className="podium-base" style={{ height: isFirst ? '140px' : '100px' }}>
+                                    <div className="podium-stats">
+                                        <span>{leader.badges || 0} Badges</span>
+                                        <span>{leader.impact?.water || '0 L'} Water</span>
+                                    </div>
+                                </div>
+                            </motion.div>
+                        );
+                    })}
+                </div>
+            )}
 
             {/* ── FILTERS ── */}
             <div className="leaderboard-controls">
@@ -105,37 +119,44 @@ const LeaderboardPage = () => {
                     <span className="col-points">Points</span>
                 </div>
                 
-                <div className="list-items">
-                    {others.map((leader, i) => (
-                        <motion.div 
-                            key={leader.id} 
-                            className={`list-item ${leader.isUser ? 'user-highlight' : ''}`}
-                            initial={{ opacity: 0, x: -20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: i * 0.05 }}
-                        >
-                            <div className="col-rank">#{leader.rank}</div>
-                            <div className="col-farmer">
-                                <img src={leader.avatar || avatarDefault} alt="" className="item-avatar" />
-                                <div>
-                                    <div className="item-name">{leader.name} {leader.isUser && "⭐"}</div>
-                                    <div className="item-loc">📍 {leader.location || 'Unknown'}</div>
+                {leaders.length === 0 ? (
+                    <div style={{ padding: '60px 20px', textAlign: 'center', color: '#888' }}>
+                        <Trophy size={48} color="#d1e2d1" style={{ marginBottom: 15 }} />
+                        <h3 style={{ color: '#1a1c19', marginBottom: 5 }}>Leaderboard is Warming Up</h3>
+                        <p>Complete missions and earn points to be the first on the board!</p>
+                    </div>
+                ) : (
+                    <div className="list-items">
+                        {others.map((leader, i) => (
+                            <motion.div 
+                                key={leader.id} 
+                                className={`list-item ${leader.isUser ? 'user-highlight' : ''}`}
+                                initial={{ opacity: 0, x: -20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: i * 0.05 }}
+                            >
+                                <div className="col-rank">#{leader.rank}</div>
+                                <div className="col-farmer">
+                                    <img src={leader.avatar || avatarDefault} alt="" className="item-avatar" />
+                                    <div>
+                                        <div className="item-name">{leader.name} {leader.isUser && "⭐"}</div>
+                                        <div className="item-loc">📍 {leader.location || 'Unknown'}</div>
+                                    </div>
                                 </div>
-                            </div>
-                            <div className="col-impact">
-                                <div className="impact-pill"><Droplets size={12} /> {leader.impact?.water || '0 L'}</div>
-                                <div className="impact-pill"><Wind size={12} /> {leader.impact?.co2 || '0t'}</div>
-                            </div>
-                            <div className="col-points">
-                                <div className="points-val"><Zap size={14} color="#d4af37" /> {(leader.points || 0).toLocaleString()}</div>
-                                <div className={`trend-${leader.trend || 'stable'}`}>{leader.trend === 'up' ? '▲' : leader.trend === 'down' ? '▼' : '▬'}</div>
-                            </div>
-                        </motion.div>
-                    ))}
-                </div>
+                                <div className="col-impact">
+                                    <div className="impact-pill"><Droplets size={12} /> {leader.impact?.water || '0 L'}</div>
+                                    <div className="impact-pill"><Wind size={12} /> {leader.impact?.co2 || '0t'}</div>
+                                </div>
+                                <div className="col-points">
+                                    <div className="points-val"><Zap size={14} color="#d4af37" /> {(leader.points || 0).toLocaleString()}</div>
+                                    <div className={`trend-${leader.trend || 'stable'}`}>{leader.trend === 'up' ? '▲' : leader.trend === 'down' ? '▼' : '▬'}</div>
+                                </div>
+                            </motion.div>
+                        ))}
+                    </div>
+                )}
             </div>
 
-            {/* ── STICKY YOUR RANK ── */}
             <motion.div 
                 className="user-sticky-rank"
                 initial={{ y: 100 }}
@@ -143,15 +164,15 @@ const LeaderboardPage = () => {
                 transition={{ delay: 0.8 }}
             >
                 <div className="sticky-content">
-                    <span className="sticky-rank">Your Rank: #18</span>
-                    <img src={img9} alt="" className="sticky-avatar" />
+                    <span className="sticky-rank">Your Rank: #{myRank?.national_score_rank || 'N/A'}</span>
+                    <img src={user?.avatar || avatarDefault} alt="" className="sticky-avatar" />
                     <div className="sticky-info">
-                        <strong>Ravi Kumar</strong>
-                        <span>Warangal District</span>
+                        <strong>{user?.name || 'Farmer'}</strong>
+                        <span>{user?.farm_profile?.location_name || 'India'}</span>
                     </div>
                     <div className="sticky-progress">
-                        <div className="progress-text">Next Rank: 110 pts away</div>
-                        <div className="progress-bar-bg"><div className="progress-bar-fill" style={{ width: '75%' }}></div></div>
+                        <div className="progress-text">Score: {myRank?.current_score || 0} pts</div>
+                        <div className="progress-bar-bg"><div className="progress-bar-fill" style={{ width: '45%' }}></div></div>
                     </div>
                     <button className="sticky-btn">View Stats</button>
                 </div>

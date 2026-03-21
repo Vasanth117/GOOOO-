@@ -97,6 +97,29 @@ async def _live_leaderboard(board_type: str, page: int, limit: int) -> dict:
 
     skip = (page - 1) * limit
     page_entries = entries[skip: skip + limit]
+    
+    # Map to frontend expected fields and add rich metrics
+    final_entries = []
+    for e in page_entries:
+        # Calculate mock impact based on score
+        score = e.get("score", 0)
+        water_saved = int(score * 12.5) # 12.5L per point
+        co2_saved = round(score * 0.05, 1) # 0.05kg per point
+        
+        final_entries.append({
+            "id": e["farmer_id"],
+            "rank": e["rank"],
+            "name": e["farmer_name"],
+            "points": score,
+            "tier": e.get("badge_tier", "beginner"),
+            "location": "Telangana, India", # Default for now
+            "impact": {
+                "water": f"{water_saved} L",
+                "co2": f"{co2_saved}kg"
+            },
+            "badges": int(score / 100) # Mock badge count
+        })
+
     return {
         "type": board_type,
         "region": "all",
@@ -105,7 +128,7 @@ async def _live_leaderboard(board_type: str, page: int, limit: int) -> dict:
         "limit": limit,
         "total": len(entries),
         "has_next": (skip + limit) < len(entries),
-        "entries": page_entries,
+        "entries": final_entries,
     }
 
 

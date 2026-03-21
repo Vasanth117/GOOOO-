@@ -1,5 +1,5 @@
-from pydantic import BaseModel, Field
-from typing import Optional, List
+from pydantic import BaseModel, Field, field_validator
+from typing import Optional, List, Any
 from app.models.farm_profile import (
     SoilType, IrrigationType, FarmingPractice,
     Location, FertilizerUsage, PesticideUsage
@@ -35,13 +35,22 @@ class CreateFarmRequest(BaseModel):
 
 class UpdateFarmRequest(BaseModel):
     farm_name: Optional[str] = None
+    location: Optional[Location] = None
     farm_size_acres: Optional[float] = None
-    soil_type: Optional[SoilType] = None
+    soil_type: Optional[str] = None
     crop_types: Optional[List[str]] = None
-    irrigation_type: Optional[IrrigationType] = None
+    irrigation_type: Optional[str] = None
     fertilizer_usage: Optional[FertilizerUsage] = None
     pesticide_usage: Optional[PesticideUsage] = None
-    farming_practices: Optional[FarmingPractice] = None
+    farming_practices: Optional[str] = None
+
+    @field_validator('soil_type', 'irrigation_type', 'farming_practices', mode='before')
+    @classmethod
+    def lowercase_enum(cls, v: Any) -> Any:
+        """Accept enum values in any case (e.g. 'Clay', 'CLAY', 'clay')."""
+        if isinstance(v, str):
+            return v.lower()
+        return v
 
 
 class WeeklyCheckinRequest(BaseModel):

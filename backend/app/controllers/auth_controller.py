@@ -10,6 +10,7 @@ from app.utils.jwt_utils import create_access_token, create_refresh_token, decod
 from app.utils.response_utils import error_response, not_found, unauthorized
 from datetime import datetime, timedelta
 from app.config import settings
+from fastapi.encoders import jsonable_encoder
 import logging
 
 logger = logging.getLogger(__name__)
@@ -19,6 +20,15 @@ from app.models.farm_profile import FarmProfile
 
 async def _build_user_response(user: User) -> UserResponse:
     farm = await FarmProfile.find_one(FarmProfile.farmer_id == str(user.id))
+    
+    # Safe serialization using jsonable_encoder
+    farm_data = None
+    if farm:
+        # Exclude internal PydanticObjectIds which cause JSON errors
+        dump = farm.model_dump(exclude={"id", "revision_id"})
+        farm_data = jsonable_encoder(dump)
+        farm_data["id"] = str(farm.id)
+
     return UserResponse(
         id=str(user.id),
         name=user.name,
@@ -28,7 +38,7 @@ async def _build_user_response(user: User) -> UserResponse:
         is_verified=user.is_verified,
         profile_picture=user.profile_picture,
         created_at=user.created_at.isoformat(),
-        farm_profile=farm.model_dump() if farm else None,
+        farm_profile=farm_data,
     )
 
 

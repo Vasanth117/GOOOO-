@@ -63,9 +63,41 @@ async def check_and_award_badges(farmer_id: str):
                 notif_type=NotificationType.BADGE_EARNED,
                 title=f"{badge.icon} Badge Earned!",
                 message=f"You earned the '{badge.name}' badge!",
-                link=f"/badges",
+                link=f"/rewards",
             )
             logger.info(f"Badge '{badge.code}' awarded to farmer {farmer_id}")
+            
+            # 🎁 Dynamic Voucher Distribution 
+            # Give users suitable vouchers automatically after they complete milestones.
+            if badge.tier in [BadgeTier.EXPERT, BadgeTier.SPECIAL]:
+                from app.models.reward import Reward, RewardType
+                
+                # Dynamic matching of reward to milestone
+                voucher_title = f"{badge.name} Bonus: ₹500 Off Eco-Tools"
+                if badge.condition_type == "streak":
+                    voucher_title = f"{badge.name} Bonus: Free Organic Seeds"
+                
+                gift_voucher = Reward(
+                    farmer_id=farmer_id,
+                    reward_type=RewardType.VOUCHER,
+                    points_cost=0,  # Free gift
+                    description=voucher_title,
+                    metadata={
+                        "discount_amount": 500 if badge.condition_type != "streak" else 0,
+                        "discount_percent": 100 if badge.condition_type == "streak" else 0,
+                        "gifted_by": "GOO Platform"
+                    }
+                )
+                await gift_voucher.insert()
+                
+                await send_notification(
+                    user_id=farmer_id,
+                    notif_type=NotificationType.REWARD_UNLOCKED,
+                    title="🎟️ Free Voucher Unlocked!",
+                    message=f"For earning the {badge.name} badge, a free voucher has been added to your wallet!",
+                    link=f"/rewards",
+                )
+                logger.info(f"Gift Voucher '{voucher_title}' automatically awarded to farmer {farmer_id}")
 
 
 async def seed_badge_definitions():

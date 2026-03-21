@@ -6,7 +6,7 @@ from app.utils.response_utils import error_response
 from datetime import datetime
 from typing import Optional
 import logging
-import bcrypt
+from app.utils.password_utils import hash_password, verify_password
 import shutil
 import os
 from pathlib import Path
@@ -98,18 +98,19 @@ async def update_profile(
 
 
 async def change_password(user: User, old_password: str, new_password: str) -> dict:
-    """Verifies old password then updates to new hashed password."""
+    """Verifies old password then updates to new hashed password.
+    Uses the same passlib/pbkdf2_sha256 scheme as registration to avoid salt errors.
+    """
     if not old_password or not new_password:
         raise ValueError("Both old and new passwords are required.")
 
-    if not bcrypt.checkpw(old_password.encode(), user.password_hash.encode()):
+    if not verify_password(old_password, user.password_hash):
         raise ValueError("Incorrect current password.")
 
     if len(new_password) < 8:
         raise ValueError("New password must be at least 8 characters.")
 
-    new_hash = bcrypt.hashpw(new_password.encode(), bcrypt.gensalt()).decode()
-    user.password_hash = new_hash
+    user.password_hash = hash_password(new_password)
     user.updated_at = datetime.utcnow()
     await user.save()
     return {"message": "Password updated successfully."}

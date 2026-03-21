@@ -14,9 +14,19 @@ import {
 
 import { apiService } from '../services/apiService';
 
+const img1 = 'https://images.unsplash.com/photo-1592484050893-b0fcba0aae73?auto=format&fit=crop&q=80&w=200';
+const img2 = 'https://images.unsplash.com/photo-1598177579172-880ac8b839cd?auto=format&fit=crop&q=80&w=200';
+const img3 = 'https://images.unsplash.com/photo-1574315042733-149b2513f56e?auto=format&fit=crop&q=80&w=200';
+const avatar2 = 'https://images.unsplash.com/photo-1531649666632-132d7ab266a2?auto=format&fit=crop&q=80&w=150';
+
 const MarketplacePage = () => {
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [myOrders, setMyOrders] = useState([]);
+    const [sellerDash, setSellerDash] = useState(null);
+    const [pointsBal, setPointsBal] = useState(0);
+    const [isBuying, setIsBuying] = useState(false);
+    
     // phase: 'gate' | 'buyer' | 'seller'
     const [phase, setPhase] = useState('gate');
     const [activeTab, setActiveTab] = useState('shop'); // For Buyer
@@ -26,21 +36,90 @@ const MarketplacePage = () => {
     const [selectedProduct, setSelectedProduct] = useState(null);
     const [showSellerProfile, setShowSellerProfile] = useState(null);
     const [showAddProduct, setShowAddProduct] = useState(false);
-    const [checkoutStep, setCheckoutStep] = useState(0);
+    
+    // Add Product Form
+    const [newPName, setNewPName] = useState('');
+    const [newPPrice, setNewPPrice] = useState('100');
+    const [newPStock, setNewPStock] = useState('10');
+    const [newPDesc, setNewPDesc] = useState('');
+    const [newPImg, setNewPImg] = useState('https://images.unsplash.com/photo-1595856728082-dd58d8e5cd8d?auto=format&fit=crop&q=80&w=200');
+
+    const loadMarketData = async () => {
+        try {
+            const data = await apiService.getProducts();
+            setProducts(data.products || []);
+            
+            if (phase === 'buyer') {
+                apiService.getMyOrders().then(setMyOrders).catch(console.error);
+                apiService.getWallet().then(w => setPointsBal(w.points_balance || 0)).catch(console.error);
+            } else if (phase === 'seller') {
+                apiService.getSellerDashboard().then(setSellerDash).catch(console.error);
+            }
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
-        const load = async () => {
-            try {
-                const data = await apiService.getProducts();
-                setProducts(data || []);
-            } catch (err) {
-                console.error(err);
-            } finally {
-                setLoading(false);
-            }
-        };
-        load();
-    }, []);
+        if (phase !== 'gate') {
+            loadMarketData();
+            const interval = setInterval(loadMarketData, 30000);
+            return () => clearInterval(interval);
+        }
+    }, [phase]);
+
+    const handleBuy = async (usePoints) => {
+        if (!selectedProduct) return;
+        setIsBuying(true);
+        try {
+            await apiService.placeOrder({
+                product_id: selectedProduct.id,
+                quantity: 1,
+                use_points: usePoints
+            });
+            alert('Order Placed Successfully! You can track it in the Tracking tab.');
+            setSelectedProduct(null);
+            loadMarketData();
+            setActiveTab('track');
+        } catch(e) {
+            alert('Failed to place order. Check stock or points balance.');
+        } finally {
+            setIsBuying(false);
+        }
+    };
+
+    const handleAddProduct = async () => {
+        if (!newPName) return;
+        try {
+            await apiService.createProduct({
+                name: newPName,
+                description: newPDesc,
+                category: 'other',
+                price: parseFloat(newPPrice),
+                stock: parseInt(newPStock),
+                image_url: newPImg,
+                is_goo_verified: true
+            });
+            alert('Product published to Marketplace!');
+            setShowAddProduct(false);
+            loadMarketData();
+            setSellerTab('inventory');
+        } catch(e) {
+            alert('Failed to add product.');
+        }
+    };
+
+    const handleUpdateOrderStatus = async (orderId, newStatus) => {
+        try {
+            await apiService.updateOrderStatus(orderId, newStatus);
+            loadMarketData();
+        } catch(e) {
+            alert('Failed to update order status');
+            console.error(e);
+        }
+    };
 
     /* ── 🟢 1: ENTRY PHASE (GATE) ── */
     if (phase === 'gate') {
@@ -105,7 +184,7 @@ const MarketplacePage = () => {
                 <div className="nav-sect-right">
                     {phase === 'buyer' ? (
                         <div className="user-hub-pill">
-                            <div className="user-pts">1,250 Pts</div>
+                            <div className="user-pts">{pointsBal} Pts</div>
                             <button className="btn-cart-pill" onClick={() => setShowCart(true)}><ShoppingBag size={18} /><span>2</span></button>
                         </div>
                     ) : (
@@ -117,7 +196,7 @@ const MarketplacePage = () => {
             {/* ── 🛒 BUYER HUB ── */}
             {phase === 'buyer' && (
                 <main className="buyer-hub-main">
-                    {activeTab === 'shop' ? (
+                    {activeTab === 'shop' && (
                         <div className="shop-page-layout">
                             {/* Filter Sidebar */}
                             <aside className="shop-sidebar-luxe">
@@ -144,12 +223,12 @@ const MarketplacePage = () => {
                                     {products.map(p => (
                                         <motion.div key={p.id} className="p-card-luxe" whileHover={{ y: -8 }} onClick={() => setSelectedProduct(p)}>
                                             <div className="p-card-img-c">
-                                                <img src={p.img} alt="p" />
+                                                <img src={p.image_url || p.img} alt="p" />
                                                 <div className="badge-verify">Verified Organic</div>
                                             </div>
                                             <div className="p-card-content">
-                                                <div className="pc-seller" onClick={(e) => {e.stopPropagation(); setShowSellerProfile(p.seller);}}>
-                                                    <MapPin size={12} /> {p.seller}
+                                                <div className="pc-seller" onClick={(e) => {e.stopPropagation(); setShowSellerProfile(p.seller_id || p.seller);}}>
+                                                    <MapPin size={12} /> Farm Vendor
                                                 </div>
                                                 <h4>{p.name}</h4>
                                                 <div className="pc-price-bar">
@@ -163,16 +242,68 @@ const MarketplacePage = () => {
                                 </div>
                             </div>
                         </div>
-                    ) : (
-                        <div className="track-page-view">
-                            <div className="live-track-card">
-                                <div className="lt-header"><h3>Tracking #ORD-8821</h3><div className="status-badge transit">In Transit</div></div>
-                                <div className="stepper-horizontal">
-                                    <div className="step done"><div className="dot" /><span>Ordered</span></div>
-                                    <div className="step done"><div className="dot" /><span>Packed</span></div>
-                                    <div className="step active"><div className="dot" /><span>Shipped</span></div>
-                                    <div className="step"><div className="dot" /><span>Arrived</span></div>
-                                    <div className="track-line-progress"><div className="fill-bar" style={{width: '66%'}} /></div>
+                    )}
+
+                    {activeTab === 'track' && (
+                        <div className="track-page-view" style={{padding: '30px', gap: '20px', display: 'flex', flexDirection: 'column'}}>
+                            <h2 style={{color: '#1a1c19', display: 'flex', alignItems: 'center', gap: '10px'}}><Package size={24} color="#2d5a27" /> Live Active Orders</h2>
+                            {myOrders.length === 0 ? <p style={{color: '#888'}}>No active orders.</p> : myOrders.map(o => {
+                                const st = o.status ? o.status.toUpperCase() : 'PENDING';
+                                return (
+                                <div key={o.id} className="live-track-card" style={{marginBottom: '20px', background: '#fff', border: '1.5px solid var(--color-border)', boxShadow: 'var(--shadow-sm)'}}>
+                                    <div className="lt-header">
+                                        <h3 style={{color: '#1a1c19'}}>Tracking #{o.id.substring(0,8).toUpperCase()}</h3>
+                                        <div className={`status-badge ${o.status}`}>{o.status}</div>
+                                    </div>
+                                    <div style={{display:'flex', gap:'15px', alignItems:'center', paddingBottom: '15px'}}>
+                                        <img src={o.product_image || 'https://images.unsplash.com/photo-1595856728082-dd58d8e5cd8d?w=100'} alt="P" style={{width: 60, height:60, borderRadius: 10, objectFit:'cover'}} />
+                                        <div>
+                                            <strong style={{fontSize: '1.2rem', color: '#1a1c19'}}>{o.product_name} (x{o.quantity})</strong>
+                                            <div style={{color:'#666', fontSize:'0.9rem', marginTop: '5px'}}>Paid: <span style={{color: '#2d5a27', fontWeight: '900'}}>₹{o.final_cash_price}</span></div>
+                                        </div>
+                                    </div>
+                                    <div className="stepper-horizontal">
+                                        <div className="step done"><div className="dot" /><span>Ordered</span></div>
+                                        <div className={`step ${['CONFIRMED','SHIPPED','DELIVERED'].includes(st) ? 'done' : 'active'}`}><div className="dot" /><span>Packed</span></div>
+                                        <div className={`step ${['SHIPPED','DELIVERED'].includes(st) ? 'done' : ''}`}><div className="dot" /><span>Shipped</span></div>
+                                        <div className={`step ${['DELIVERED'].includes(st) ? 'done' : ''}`}><div className="dot" /><span>Arrived</span></div>
+                                        <div className="track-line-progress">
+                                            <div className="fill-bar" style={{width: ['CONFIRMED'].includes(st) ? '33%' : ['SHIPPED'].includes(st) ? '66%' : ['DELIVERED'].includes(st) ? '100%' : '10%'}} />
+                                        </div>
+                                    </div>
+                                </div>
+                                );
+                            })}
+                        </div>
+                    )}
+
+                    {activeTab === 'rewards' && (
+                        <div className="track-page-view" style={{padding: '30px', display: 'flex', flexDirection: 'column', gap: '20px'}}>
+                            <div className="reward-promo-card" style={{padding: '40px', background: 'linear-gradient(135deg, #2d5a27, #1e3d1a)', border: 'none', borderRadius: '24px'}}>
+                                <Award size={50} color="#fcd34d" />
+                                <h1 style={{fontSize: '2.5rem', marginTop: '20px', color: '#fff'}}>Sustainable Rewards Hub</h1>
+                                <p style={{fontSize: '1.1rem', maxWidth: '600px', color: 'rgba(255,255,255,0.9)'}}>You have successfully earned points through your farming missions. Use them to lower the cost of high-quality organic seeds and tools.</p>
+                                <div className="user-pts" style={{width: 'fit-content', fontSize: '1.5rem', padding: '15px 30px', marginTop: '20px', background: 'rgba(255,255,255,0.1)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)'}}>
+                                    Current Balance: {pointsBal} Points
+                                </div>
+                                <div style={{marginTop: '20px', color: 'rgba(255,255,255,0.6)'}}>100 Points = ₹1.00 Discount</div>
+                            </div>
+
+                            <div style={{marginTop: '30px'}}>
+                                <h3>Available Organic Vouchers</h3>
+                                <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px', marginTop: '20px'}}>
+                                    <div className="reward-promo-card" style={{background: 'rgba(255,255,255,0.05)', border: '1px dotted rgba(255,255,255,0.2)'}}>
+                                        <Tag size={20} />
+                                        <h4>10% Off All Seeds</h4>
+                                        <p>Redeem 500 Pts</p>
+                                        <button className="btn-luxe-green" style={{marginTop: '10px'}}>Acquire Voucher</button>
+                                    </div>
+                                    <div className="reward-promo-card" style={{background: 'rgba(255,255,255,0.05)', border: '1px dotted rgba(255,255,255,0.2)'}}>
+                                        <History size={20} />
+                                        <h4>Bulk Order Discount</h4>
+                                        <p>Redeem 1500 Pts</p>
+                                        <button className="btn-luxe-green" style={{marginTop: '10px', opacity: 0.5}}>Insufficient Points</button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -186,15 +317,83 @@ const MarketplacePage = () => {
                     {sellerTab === 'dash' && (
                         <div className="seller-dash-view">
                             <div className="stats-row-luxe">
-                                <div className="stat-card-gold"><DollarSign size={24} /><div><strong>₹1.2L</strong><span>Income</span></div></div>
-                                <div className="stat-card-gold green"><ClipboardList size={24} /><div><strong>28</strong><span>Sales</span></div></div>
+                                <div className="stat-card-gold"><DollarSign size={24} /><div><strong>₹{sellerDash?.total_income || 0}</strong><span>Total Income</span></div></div>
+                                <div className="stat-card-gold green"><ClipboardList size={24} /><div><strong>{sellerDash?.sales || 0}</strong><span>Total Sales</span></div></div>
+                                <div className="stat-card-gold"><Package size={24} /><div><strong>{sellerDash?.products?.length || 0}</strong><span>Active Products</span></div></div>
                             </div>
-                            <div className="sales-graph-placeholder">
-                                <h3>Revenue History</h3>
-                                <div className="graph-bars">
-                                    {[30, 60, 45, 80, 50, 90, 75].map((h, i) => <div key={i} className="g-bar" style={{height: h + '%'}} />)}
+                            <div className="sales-graph-placeholder" style={{marginTop: '30px', height: 'auto', background: 'transparent'}}>
+                                <h3 style={{color: '#1a1c19'}}>Total Orders Received ({sellerDash?.recent_orders?.length || 0})</h3>
+                                <div className="group-list" style={{display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '15px'}}>
+                                    {sellerDash?.recent_orders?.map(so => (
+                                        <div key={so.id} style={{background: '#fff', padding: '15px', borderRadius: '12px', display: 'flex', justifyContent: 'space-between', border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-sm)'}}>
+                                            <div>
+                                                <strong style={{display: 'block', fontSize: '1rem', marginBottom: '5px', color: '#1a1c19'}}>{so.product_name} (x{so.quantity})</strong>
+                                                <div style={{fontSize: '0.8rem', color: '#666'}}>Date: {new Date(so.created_at).toLocaleString()}</div>
+                                            </div>
+                                            <div style={{textAlign: 'right'}}>
+                                                <div style={{fontWeight: 'bold', color: '#2d5a27', fontSize: '1.1rem', marginBottom: '5px'}}>₹{so.final_cash_price}</div>
+                                                <div className={`status-badge ${so.status}`} style={{display:'inline-block'}}>{so.status}</div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                    {(!sellerDash || !sellerDash.recent_orders || sellerDash.recent_orders.length === 0) && (
+                                        <p style={{color: '#888', fontStyle: 'italic', padding: '10px 0'}}>No orders processed yet.</p>
+                                    )}
                                 </div>
                             </div>
+                        </div>
+                    )}
+                    {sellerTab === 'inventory' && (
+                        <div className="track-page-view" style={{padding: '30px', display: 'flex', flexDirection: 'column', gap: '20px'}}>
+                            <h2>Manage Active Inventory ({sellerDash?.products?.length || 0})</h2>
+                            <div className="product-wall-luxe" style={{gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))'}}>
+                                {sellerDash?.products?.map(p => (
+                                    <div key={p.id} className="p-card-luxe" style={{border: '1px solid rgba(255,255,255,0.1)'}}>
+                                        <div className="p-card-img-c">
+                                            <img src={p.image_url || p.img || 'https://images.unsplash.com/photo-1595856728082-dd58d8e5cd8d?w=200'} alt="p" />
+                                        </div>
+                                        <div className="p-card-content">
+                                            <h4>{p.name}</h4>
+                                            <div style={{color: '#888', fontSize: '0.8rem'}}>Category: {p.category}</div>
+                                            <div className="pc-price-bar" style={{marginTop:'10px'}}>
+                                                <div className="price-main">₹{p.price}</div>
+                                                <div style={{color: '#2d5a27', fontWeight: 'bold'}}>Stock: {p.stock}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                                {(!sellerDash || !sellerDash.products || sellerDash.products.length === 0) && (
+                                    <p style={{color: '#888', gridColumn: '1 / -1'}}>You have no active products. List one above!</p>
+                                )}
+                            </div>
+                        </div>
+                    )}
+                    {sellerTab === 'sales' && (
+                        <div className="track-page-view" style={{padding: '30px', display: 'flex', flexDirection: 'column'}}>
+                             <h2>Order Fulfillment Queue</h2>
+                             <div className="group-list" style={{display: 'flex', flexDirection: 'column', gap: '15px', marginTop: '15px'}}>
+                                {sellerDash?.recent_orders?.map(so => (
+                                    <div key={so.id} style={{background: '#fff', padding: '20px', borderRadius: '12px', display: 'flex', justifyContent: 'space-between', border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-sm)'}}>
+                                        <div>
+                                            <strong style={{display: 'block', fontSize: '1.2rem', color: '#1a1c19'}}>{so.product_name} <span style={{fontSize:'1rem', color:'#666'}}>(x{so.quantity})</span></strong>
+                                            <div style={{color: '#666', margin: '5px 0', fontSize:'0.85rem'}}>Order ID: #{so.id.substring(0,8).toUpperCase()}</div>
+                                            <div style={{fontWeight: 'bold', color: '#2d5a27', fontSize: '1.2rem'}}>Total Value: ₹{so.final_cash_price}</div>
+                                        </div>
+                                        <div style={{textAlign: 'right', display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'flex-end'}}>
+                                            <div className={`status-badge ${so.status}`}>{so.status}</div>
+                                            {so.status === 'pending' && (
+                                                <button className="btn-add-luxe" style={{padding: '8px 15px', fontSize: '0.9rem'}} onClick={() => handleUpdateOrderStatus(so.id, 'shipped')}>Mark as Shipped</button>
+                                            )}
+                                            {so.status === 'shipped' && (
+                                                <button className="btn-luxe-green" style={{padding: '8px 15px', fontSize: '0.9rem'}} onClick={() => handleUpdateOrderStatus(so.id, 'delivered')}>Mark as Delivered</button>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+                                {(!sellerDash || !sellerDash.recent_orders || sellerDash.recent_orders.length === 0) && (
+                                    <p style={{color: '#888'}}>No orders awaiting fulfillment.</p>
+                                )}
+                             </div>
                         </div>
                     )}
                 </main>
@@ -206,16 +405,16 @@ const MarketplacePage = () => {
                     <div className="modal-luxe-overlay" onClick={() => setSelectedProduct(null)}>
                         <motion.div className="product-detail-glass" initial={{ y: 50 }} animate={{ y: 0 }} onClick={e => e.stopPropagation()}>
                             <div className="pd-left">
-                                <img src={selectedProduct.img} alt="p" className="pd-main-img" />
+                                <img src={selectedProduct.image_url || selectedProduct.img} alt="p" className="pd-main-img" />
                                 <div className="farm-transparency-card">
                                     <h3>🌱 Farm Transparency Proof</h3>
-                                    <p>Seed to Harvest proof from Ravi's Verified Missions.</p>
+                                    <p>Seed to Harvest proof from Verified Missions.</p>
                                     <div className="transparency-media-row">
-                                        <div className="tm-item"><img src={img1} alt="i" /><span>Planting</span></div>
-                                        <div className="tm-item"><img src={img2} alt="i" /><span>Feed</span></div>
-                                        <div className="tm-item"><img src={img3} alt="i" /><span>Ready</span></div>
+                                        <div className="tm-item"><img src={img1} alt="Planting" /><span>Planting</span></div>
+                                        <div className="tm-item"><img src={img2} alt="Feed" /><span>Feed</span></div>
+                                        <div className="tm-item"><img src={img3} alt="Ready" /><span>Ready</span></div>
                                     </div>
-                                    <button className="btn-add-luxe" onClick={() => setShowSellerProfile(selectedProduct.seller)}>View Farmer Instagram Profile <ArrowRight size={14} /></button>
+                                    <button className="btn-add-luxe" style={{marginTop: '15px'}} onClick={() => setShowSellerProfile(selectedProduct.seller_id || selectedProduct.seller)}>View Farmer Profile <ArrowRight size={14} /></button>
                                 </div>
                             </div>
                             <div className="pd-right">
@@ -223,7 +422,8 @@ const MarketplacePage = () => {
                                 <h1 className="pd-name">{selectedProduct.name}</h1>
                                 <div className="pd-price-main">₹{selectedProduct.price}</div>
                                 <p className="pd-desc">{selectedProduct.desc}</p>
-                                <button className="btn-luxe-green" style={{width: '100%', marginTop: '40px'}}>Buy with Points Discount</button>
+                                <button className="btn-luxe-green" style={{width: '100%', marginTop: '40px', opacity: isBuying ? 0.5 : 1}} disabled={isBuying} onClick={() => handleBuy(true)}>{isBuying ? 'Processing...' : 'Buy with Points Discount 💰'}</button>
+                                <button className="btn-add-luxe" style={{width: '100%', marginTop: '10px', height: '45px'}} disabled={isBuying} onClick={() => handleBuy(false)}>Buy Normally (₹{selectedProduct?.price})</button>
                             </div>
                         </motion.div>
                     </div>
@@ -233,13 +433,14 @@ const MarketplacePage = () => {
             <AnimatePresence>
                 {showSellerProfile && (
                     <div className="modal-luxe-overlay" onClick={() => setShowSellerProfile(null)}>
-                        <motion.div className="insta-profile-modal" initial={{ scale: 0.9 }} animate={{ scale: 1 }} onClick={e => e.stopPropagation()}>
+                        <motion.div className="insta-profile-modal" initial={{ scale: 0.9 }} animate={{ scale: 1 }} onClick={e => e.stopPropagation()} style={{position: 'relative'}}>
+                            <button className="btn-close-pd" onClick={() => setShowSellerProfile(null)} style={{top: '30px', right: '30px'}}><X /></button>
                             <div className="insta-header">
                                 <img src={avatar2} alt="f" className="sh-avatar" />
                                 <div className="sh-meta">
                                     <h2>{showSellerProfile} <ShieldCheck size={20} color="#2d5a27" /></h2>
                                     <p>Organic Rice Farmer • 15 Years Experience</p>
-                                    <button className="btn-luxe-blue" style={{marginTop: '20px'}}>Follow Farmer Feed</button>
+                                    <button className="btn-luxe-green" style={{marginTop: '20px', padding: '12px 25px'}}>Follow Farmer Feed</button>
                                 </div>
                             </div>
                             <div className="insta-grid">
@@ -248,8 +449,64 @@ const MarketplacePage = () => {
                         </motion.div>
                     </div>
                 )}
-            </AnimatePresence>
+                {showAddProduct && (
+                    <div className="modal-luxe-overlay" onClick={() => setShowAddProduct(false)}>
+                        <motion.div className="insta-profile-modal" initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} onClick={e => e.stopPropagation()} style={{maxWidth: '600px', background: '#fff', border: '1px solid var(--color-border)', boxShadow: '0 40px 100px rgba(0,0,0,0.1)', padding: '30px', borderRadius: '16px'}}>
+                            <div className="insta-header" style={{borderBottom: '1.5px solid var(--color-border)', paddingBottom: '15px', color: '#1a1c19'}}>
+                                <h2 style={{display: 'flex', alignItems: 'center', gap: '10px', fontSize: '1.4rem', margin: 0, color: '#1a1c19'}}><Store size={22} color="#2d5a27" /> Add New Store Product</h2>
+                            </div>
+                            <div style={{display: 'flex', flexDirection: 'column', gap: '20px', marginTop: '20px'}}>
+                                
+                                <div style={{display: 'flex', gap: '15px'}}>
+                                    <div style={{flex: 1}}>
+                                        <label style={{color: '#666', fontSize: '0.85rem', fontWeight: '500', marginBottom: '8px', display: 'block'}}>Product Name</label>
+                                        <input type="text" style={{width: '100%', background: '#f9f9f9', padding:'14px', color:'#1a1c19', border:'1px solid var(--color-border)', borderRadius: '8px', outline: 'none', fontSize: '1rem'}} value={newPName} onChange={e=>setNewPName(e.target.value)} placeholder="e.g. Organic Tomatoes" />
+                                    </div>
+                                </div>
+ 
+                                <div>
+                                    <label style={{color: '#666', fontSize: '0.85rem', fontWeight: '500', marginBottom: '8px', display: 'block'}}>Product Image</label>
+                                    <div style={{display: 'flex', gap: '10px', alignItems: 'center'}}>
+                                        <input type="text" style={{flex: 1, background: '#f9f9f9', padding:'14px', color:'#1a1c19', border:'1px solid var(--color-border)', borderRadius: '8px', outline: 'none', fontSize: '0.9rem'}} value={newPImg} onChange={e=>setNewPImg(e.target.value)} placeholder="Image URL..." />
+                                        <input type="file" accept="image/*" id="file-upload" style={{display: 'none'}} onChange={(e) => {
+                                            const file = e.target.files[0];
+                                            if (file) {
+                                                const reader = new FileReader();
+                                                reader.onloadend = () => setNewPImg(reader.result);
+                                                reader.readAsDataURL(file);
+                                            }
+                                        }} />
+                                        <label htmlFor="file-upload" style={{cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', background: '#2d5a27', padding: '14px 18px', borderRadius: '8px', color: 'white', fontWeight: 'bold', fontSize: '0.9rem'}}>
+                                            <ImageIcon size={18} /> Upload Local
+                                        </label>
+                                        {newPImg && <img src={newPImg} alt="preview" style={{width: '45px', height: '45px', borderRadius: '6px', objectFit: 'cover', border: '1px solid var(--color-border)'}} />}
+                                    </div>
+                                </div>
 
+                                <div style={{display: 'flex', gap: '15px'}}>
+                                    <div style={{flex: 1}}>
+                                        <label style={{color: '#666', fontSize: '0.85rem', fontWeight: '500', marginBottom: '8px', display: 'block'}}>Price (₹)</label>
+                                        <input type="number" style={{width: '100%', background: '#fff', padding:'14px', color:'#1a1c19', border:'1px solid var(--color-border)', borderRadius: '8px', outline: 'none', fontSize: '1rem'}} value={newPPrice} onChange={e=>setNewPPrice(e.target.value)} />
+                                    </div>
+                                    <div style={{flex: 1}}>
+                                        <label style={{color: '#666', fontSize: '0.85rem', fontWeight: '500', marginBottom: '8px', display: 'block'}}>Stock Amount</label>
+                                        <input type="number" style={{width: '100%', background: '#fff', padding:'14px', color:'#1a1c19', border:'1px solid var(--color-border)', borderRadius: '8px', outline: 'none', fontSize: '1rem'}} value={newPStock} onChange={e=>setNewPStock(e.target.value)} />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label style={{color: '#666', fontSize: '0.85rem', fontWeight: '500', marginBottom: '8px', display: 'block'}}>Description / Story</label>
+                                    <textarea style={{width: '100%', background: '#fff', padding:'14px', minHeight: '100px', color:'#1a1c19', border:'1px solid var(--color-border)', borderRadius: '8px', outline: 'none', resize: 'vertical', fontSize: '0.95rem'}} value={newPDesc} onChange={e=>setNewPDesc(e.target.value)} placeholder="Tell buyers how it was grown..." />
+                                </div>
+
+                                <button className="btn-luxe-green" style={{marginTop: '20px', padding: '16px', fontSize: '1.05rem', borderRadius: '8px', fontWeight: 'bold', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', border: 'none', cursor: 'pointer'}} onClick={handleAddProduct}>
+                                    <Package size={20} /> Publish to Marketplace
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };

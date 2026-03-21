@@ -72,5 +72,5 @@ def require_roles(*roles: UserRole):
 require_farmer = require_roles(UserRole.FARMER, UserRole.GRC, UserRole.ADMIN)
 require_expert = require_roles(UserRole.EXPERT, UserRole.ADMIN)
 require_admin = require_roles(UserRole.ADMIN)
-require_seller = require_roles(UserRole.SELLER, UserRole.ADMIN)
+require_seller = require_roles(UserRole.SELLER, UserRole.ADMIN, UserRole.FARMER, UserRole.GRC, UserRole.EXPERT)
 require_grc = require_roles(UserRole.GRC, UserRole.ADMIN)

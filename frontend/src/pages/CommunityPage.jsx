@@ -1,37 +1,29 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Users, Search, Filter, MessageSquare, ThumbsUp, 
     Share2, Bookmark, Award, ShieldCheck, UserCheck,
     MapPin, Sprout, Target, ChevronRight, Plus, 
     CheckCircle2, Info, Globe, HelpCircle, GraduationCap,
-    Send, UserPlus, Clock
+    Send, UserPlus, Clock, Loader2
 } from 'lucide-react';
 import avatar2 from '../assets/images/2.jpg';
 import avatar3 from '../assets/images/3.jpg';
 import avatar4 from '../assets/images/4.jpg';
 import img1 from '../assets/images/1.jpg';
 
-const GROUPS = [
-    { id: 1, name: 'Warangal Rice Union', members: '1.2k', type: 'Location', joined: true },
-    { id: 2, name: 'Organic Pioneers', members: '850', type: 'Interest', joined: false },
-    { id: 3, name: 'Vegetable Tech', members: '2.4k', type: 'Crop', joined: true },
-    { id: 4, name: 'Eco-Water Saviors', members: '300', type: 'Impact', joined: false }
-];
+import avatar from '../assets/images/9.jpg';
+import { apiService } from '../services/apiService';
 
-const DISCUSSIONS = [
-    {
-        id: 1, author: 'Suresh Raina', avatar: avatar2, time: '2h ago',
-        category: 'Pest Control', title: 'Natural ways to stop Brown Plant Hopper?',
-        content: 'I noticed some yellowing in my paddy field. I want to avoid chemicals this season. Any proven organic decoctions?',
-        upvotes: 45, comments: 12, tags: ['Paddy', 'Organic']
-    },
-    {
-        id: 2, author: 'Dr. Anjali Singh', avatar: avatar3, time: '5h ago', role: 'Expert',
-        category: 'Soil Health', title: 'Top 3 Green Manures for Southern Soil',
-        content: 'Dhaincha and Sunnhemp are performing excellently this season. Here is a step-by-step guide on incorporating them...',
-        upvotes: 120, comments: 34, tags: ['Expert Advice', 'Soil']
-    }
+const GROUPS = [
+    { id: 1, name: 'Warangal Rice Union', members: '1.2k', type: 'Location' },
+    { id: 2, name: 'Organic Pioneers', members: '850', type: 'Interest' },
+    { id: 3, name: 'Vegetable Tech', members: '2.4k', type: 'Crop' },
+    { id: 4, name: 'Eco-Water Saviors', members: '300', type: 'Impact' },
+    { id: 5, name: 'Solar IoT Network', members: '1.5k', type: 'Tech' },
+    { id: 6, name: 'Pest Control Alliance', members: '4.1k', type: 'Interest' },
+    { id: 7, name: 'North India Wheat Group', members: '3.2k', type: 'Location' },
+    { id: 8, name: 'Drone Surveillance Crew', members: '950', type: 'Tech' }
 ];
 
 const CommunityPage = () => {
@@ -39,26 +31,120 @@ const CommunityPage = () => {
     const [showApplyModal, setShowApplyModal] = useState(false);
     const [hasApplied, setHasApplied] = useState(false);
 
+    // Dynamic Social Feed & Widget States
+    const [posts, setPosts] = useState([]);
+    const [experts, setExperts] = useState([]);
+    const [verifications, setVerifications] = useState([]);
+    const [joinedGroupIds, setJoinedGroupIds] = useState([]);
+    const [newPostContent, setNewPostContent] = useState('');
+    const [loading, setLoading] = useState(true);
+    const [isPosting, setIsPosting] = useState(false);
+
+    const loadFeed = async () => {
+        try {
+            let postType = '';
+            if (activeCategory === 'Organic Farming' || activeCategory === 'Water Mgmt') postType = 'eco';
+            else if (activeCategory !== 'All') postType = 'missions';
+
+            const [feedData, expertData, verificationData, profileData] = await Promise.all([
+                apiService.getFeed(1, postType),
+                apiService.getLeaderboard('national').catch(() => ({ leaderboard: [] })),
+                apiService.getPendingVerifications().catch(() => ({ verifications: [] })),
+                apiService.getProfile().catch(() => ({ preferences: {} }))
+            ]);
+
+            setPosts(feedData.posts || []);
+            setExperts((expertData.leaderboard || []).slice(0, 3));
+            setVerifications(verificationData.verifications || []);
+            setJoinedGroupIds(profileData.preferences?.joined_groups || []);
+        } catch (error) {
+            console.error('Failed to load feed:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        loadFeed();
+        // 🔄 REAL-TIME SYNC: Refresh feed & widgets every 30 seconds
+        const interval = setInterval(loadFeed, 30000);
+        return () => clearInterval(interval);
+    }, [activeCategory]);
+
+    const handleCreatePost = async () => {
+        if (!newPostContent.trim()) return;
+        setIsPosting(true);
+        try {
+            const formData = new FormData();
+            formData.append('content', newPostContent);
+            await apiService.createPost(formData);
+            setNewPostContent('');
+            loadFeed(); // Refresh feed after post
+        } catch (error) {
+            alert('Failed to post. Please try again.');
+        } finally {
+            setIsPosting(false);
+        }
+    };
+
+    const handleToggleLike = async (postId) => {
+        try {
+            // Optimistic update
+            setPosts(posts.map(p => 
+                p.id === postId 
+                    ? { ...p, is_liked_by_me: !p.is_liked_by_me, likes_count: p.is_liked_by_me ? p.likes_count - 1 : p.likes_count + 1 }
+                    : p
+            ));
+            await apiService.toggleLike(postId);
+        } catch (error) {
+            // Revert on fail
+            loadFeed();
+        }
+    };
+
+    const handleToggleGroup = async (groupId) => {
+        const isJoined = joinedGroupIds.includes(groupId);
+        const newJoined = isJoined ? joinedGroupIds.filter(id => id !== groupId) : [...joinedGroupIds, groupId];
+        
+        // Optimistic UI update
+        setJoinedGroupIds(newJoined);
+        
+        try {
+            await apiService.updatePreferences({ joined_groups: newJoined });
+        } catch (error) {
+            setJoinedGroupIds(joinedGroupIds); // Revert on fail
+            alert("Failed to toggle group status.");
+        }
+    };
+
     return (
         <div className="community-layout">
             
             {/* ── LEFT: DISCOVERY & GROUPS ── */}
             <aside className="community-sidebar-left">
                 <div style={{ marginBottom: 25 }}>
-                    <h3 className="sidebar-section-title">Communities</h3>
-                    <div className="group-list">
-                        {GROUPS.map(group => (
-                            <motion.div key={group.id} className="group-mini-card" whileHover={{ x: 5 }}>
-                                <div className="group-icon-box">
-                                    {group.type === 'Location' ? <MapPin size={16} /> : <Sprout size={16} />}
-                                </div>
-                                <div className="group-info">
-                                    <div className="group-name">{group.name}</div>
-                                    <div className="group-meta">{group.members} members</div>
-                                </div>
-                                {group.joined ? <CheckCircle2 size={16} color="#2d5a27" /> : <Plus size={16} color="#aaa" />}
-                            </motion.div>
-                        ))}
+                    <h3 className="sidebar-section-title">Communities ({GROUPS.length})</h3>
+                    <div className="group-list" style={{ maxHeight: '280px', overflowY: 'auto', paddingRight: '5px' }}>
+                        {GROUPS.map(group => {
+                            const isJoined = joinedGroupIds.includes(group.id);
+                            return (
+                                <motion.div key={group.id} className="group-mini-card" whileHover={{ x: 5 }}>
+                                    <div className="group-icon-box">
+                                        {group.type === 'Location' ? <MapPin size={16} /> : <Sprout size={16} />}
+                                    </div>
+                                    <div className="group-info">
+                                        <div className="group-name">{group.name}</div>
+                                        <div className="group-meta">{group.members} members</div>
+                                    </div>
+                                    <button 
+                                        onClick={() => handleToggleGroup(group.id)} 
+                                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                                    >
+                                        {isJoined ? <CheckCircle2 size={20} color="#2d5a27" /> : <Plus size={20} color="#aaa" />}
+                                    </button>
+                                </motion.div>
+                            );
+                        })}
                     </div>
                 </div>
 
@@ -88,41 +174,78 @@ const CommunityPage = () => {
                     </div>
                 </header>
 
-                <div className="create-discuss-box">
-                    <img src={avatar4} alt="me" className="mini-avatar" />
-                    <button className="fake-input-btn">Ask the community a question...</button>
+                <div className="create-discuss-box" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
+                    <div style={{ display: 'flex', gap: '15px' }}>
+                        <img src={avatar} alt="me" className="mini-avatar" />
+                        <textarea 
+                            className="fake-input-btn" 
+                            style={{ flex: 1, minHeight: '60px', borderRadius: '12px', padding: '12px', resize: 'none' }}
+                            placeholder="Ask the community a question or share your progress..."
+                            value={newPostContent}
+                            onChange={(e) => setNewPostContent(e.target.value)}
+                        />
+                    </div>
+                    {newPostContent.trim() && (
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '10px' }}>
+                            <button 
+                                className="btn-primary" 
+                                style={{ padding: '8px 24px', borderRadius: '8px' }}
+                                onClick={handleCreatePost}
+                                disabled={isPosting}
+                            >
+                                {isPosting ? <Loader2 size={16} className="spinner" /> : <><Send size={16} /> Post</>}
+                            </button>
+                        </div>
+                    )}
                 </div>
 
                 <div className="discuss-list">
-                    {DISCUSSIONS.map((disc, i) => (
-                        <motion.div 
-                            key={disc.id} className="discuss-card"
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: i * 0.1 }}
-                        >
-                            <div className="discuss-top">
-                                <img src={disc.avatar} alt="author" className="mini-avatar" />
-                                <div>
-                                    <div className="discuss-author">
-                                        {disc.author} {disc.role && <span className="expert-badge"><GraduationCap size={10} /> Expert</span>}
+                    {loading ? (
+                        <div style={{ padding: '40px', textAlign: 'center', color: '#888' }}><Loader2 size={24} className="spinner" /> Loading Feed...</div>
+                    ) : posts.length === 0 ? (
+                        <div style={{ padding: '40px', textAlign: 'center', color: '#888' }}>Be the first to post something!</div>
+                    ) : (
+                        posts.map((post, i) => (
+                            <motion.div 
+                                key={post.id} className="discuss-card"
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: i * 0.1 }}
+                            >
+                                <div className="discuss-top">
+                                    <div className="mini-avatar" style={{ background: '#2d5a27', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 'bold' }}>
+                                        {post.author.name[0]}
                                     </div>
-                                    <div className="discuss-meta">{disc.category} • {disc.time}</div>
+                                    <div>
+                                        <div className="discuss-author">
+                                            {post.author.name} {post.author.score_tier && post.author.score_tier !== 'none' && <span className="expert-badge"><Award size={10} /> {post.author.score_tier}</span>}
+                                        </div>
+                                        <div className="discuss-meta">{new Date(post.created_at).toLocaleString()}</div>
+                                    </div>
                                 </div>
-                            </div>
-                            <h3 className="discuss-title">{disc.title}</h3>
-                            <p className="discuss-content">{disc.content}</p>
-                            <div className="discuss-tags">
-                                {disc.tags.map(tag => <span key={tag} className="d-tag">#{tag}</span>)}
-                            </div>
-                            <div className="discuss-actions">
-                                <button className="d-action"><ThumbsUp size={16} /> <span>{disc.upvotes}</span></button>
-                                <button className="d-action"><MessageSquare size={16} /> <span>{disc.comments}</span></button>
-                                <button className="d-action"><Share2 size={16} /></button>
-                                <button className="d-action" style={{marginLeft: 'auto'}}><Bookmark size={16} /></button>
-                            </div>
-                        </motion.div>
-                    ))}
+                                <p className="discuss-content">{post.content}</p>
+                                {post.image_url && (
+                                    <div style={{ marginTop: '15px', borderRadius: '12px', overflow: 'hidden' }}>
+                                        <img src={`http://localhost:8000${post.image_url}`} style={{ width: '100%', maxHeight: '400px', objectFit: 'cover' }} alt="post media" />
+                                    </div>
+                                )}
+                                <div className="discuss-tags">
+                                    {post.tags && post.tags.map(tag => <span key={tag} className="d-tag">#{tag}</span>)}
+                                </div>
+                                <div className="discuss-actions" style={{ marginTop: '15px', paddingTop: '15px', borderTop: '1px solid #eee' }}>
+                                    <button 
+                                        className="d-action" 
+                                        style={{ color: post.is_liked_by_me ? '#2d5a27' : '#666' }}
+                                        onClick={() => handleToggleLike(post.id)}
+                                    >
+                                        <ThumbsUp size={16} /> <span>{post.likes_count}</span>
+                                    </button>
+                                    <button className="d-action"><MessageSquare size={16} /> <span>{post.comments_count}</span></button>
+                                    <button className="d-action"><Share2 size={16} /></button>
+                                </div>
+                            </motion.div>
+                        ))
+                    )}
                 </div>
             </main>
 
@@ -154,22 +277,23 @@ const CommunityPage = () => {
                 <div className="verification-widget">
                     <div className="widget-title-row">
                         <UserCheck size={18} color="#2d5a27" />
-                        <span>Peer Verification (3)</span>
+                        <span>Peer Verification ({verifications.length})</span>
                     </div>
-                    {[
-                        { name: 'Arjun P.', task: 'Used Bio-Pesticide', dist: '0.8 km' },
-                        { name: 'Megha R.', task: 'Compost Pit Setup', dist: '1.2 km' }
-                    ].map((item, i) => (
-                        <div key={i} className="verify-item">
-                            <div className="verify-user-info">
-                                <div className="v-name">{item.name}</div>
-                                <div className="v-task">{item.task}</div>
+                    {verifications.length === 0 ? (
+                        <div style={{ color: '#888', fontSize: '0.85rem', padding: '10px 0' }}>No pending validations found.</div>
+                    ) : (
+                        verifications.map((item, i) => (
+                            <div key={i} className="verify-item">
+                                <div className="verify-user-info">
+                                    <div className="v-name">{item.farmer_name || 'Farmer'}</div>
+                                    <div className="v-task">Pending Mission: {item.mission_id}</div>
+                                </div>
+                                <div className="v-dist">LIVE</div>
+                                <button className="v-check-btn"><ChevronRight size={14} /></button>
                             </div>
-                            <div className="v-dist">{item.dist}</div>
-                            <button className="v-check-btn"><ChevronRight size={14} /></button>
-                        </div>
-                    ))}
-                    <button className="view-all-btn">View All Queue</button>
+                        ))
+                    )}
+                    {verifications.length > 0 && <button className="view-all-btn">View All Queue</button>}
                 </div>
 
                 {/* Expert Recommendations */}
@@ -178,15 +302,16 @@ const CommunityPage = () => {
                         <Award size={18} color="#2d5a27" />
                         <span>Top Contributors</span>
                     </div>
-                    {[
-                        { name: 'Dr. Anjali Singh', xp: '15k XP', role: 'Agronomist' },
-                        { name: 'Vikram Mehta', xp: '12k XP', role: 'Organic Master' }
-                    ].map((exp, i) => (
-                        <div key={i} className="expert-list-item">
-                            <div style={{ fontWeight: 700, fontSize: '0.82rem' }}>{exp.name}</div>
-                            <div style={{ fontSize: '0.72rem', color: '#888' }}>{exp.role} • {exp.xp}</div>
-                        </div>
-                    ))}
+                    {experts.length === 0 ? (
+                        <div style={{ color: '#888', fontSize: '0.85rem', padding: '10px 0' }}>Syncing leaderboard...</div>
+                    ) : (
+                        experts.map((exp, i) => (
+                            <div key={i} className="expert-list-item">
+                                <div style={{ fontWeight: 700, fontSize: '0.82rem' }}>#{i+1} {exp.name || 'Anonymous'}</div>
+                                <div style={{ fontSize: '0.72rem', color: '#888' }}>{exp.tier || 'Farmer'} • {exp.score} XP</div>
+                            </div>
+                        ))
+                    )}
                 </div>
 
             </aside>

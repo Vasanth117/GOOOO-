@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 if settings.GROQ_API_KEY:
     client = groq.AsyncGroq(api_key=settings.GROQ_API_KEY)
     TEXT_MODEL = "llama-3.1-8b-instant"
-    VISION_MODEL = "llama-3.2-90b-vision-preview"
+    VISION_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct"
 else:
     client = None
     logger.warning("GROQ_API_KEY not set. AI features will use mock responses.")
@@ -330,7 +330,7 @@ async def analyze_periodic_report(image_data: bytes, report_text: str) -> dict:
                 }
             ],
             model=VISION_MODEL,
-            response_format={"type": "json_object"},
+            max_tokens=800,
         )
         content = response.choices[0].message.content
         return json.loads(_clean_json_response(content))
@@ -340,7 +340,8 @@ async def analyze_periodic_report(image_data: bytes, report_text: str) -> dict:
             "abnormal_growth": False,
             "organic_consistency_score": 70,
             "health_score": 75,
-            "analysis_notes": "AI analysis timed out. Manual review suggested."
+            "analysis_notes": f"API Error: {str(e)}",
+            "api_failure": True
         }
 
 

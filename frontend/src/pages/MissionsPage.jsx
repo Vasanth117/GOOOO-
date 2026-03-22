@@ -4,7 +4,7 @@ import {
     Leaf, Trophy, CheckCircle, Clock, PlayCircle,
     Rocket, Target, Zap, Globe, Flame, Loader2, ChevronRight, Brain,
     ShieldCheck, Award, MapPin, Camera, X, Send, ListChecks, Play,
-    BarChart3, Users, Crown, Filter, Calendar, Activity, CheckSquare
+    BarChart3, Users, Crown, Filter, Calendar, Activity, CheckSquare, Upload
 } from "lucide-react";
 import { apiService } from '../services/apiService';
 import CameraCapture from '../components/CameraCapture';
@@ -18,6 +18,7 @@ const MissionsPage = () => {
     const [loading, setLoading] = useState(true);
     const [reward, setReward] = useState(null);
     const [showSubmitModal, setShowSubmitModal] = useState(false);
+    const [showReportModal, setShowReportModal] = useState(false);
     const [selectedTask, setSelectedTask] = useState(null);
     const [historyMissions, setHistoryMissions] = useState([]);
     const [submitting, setSubmitting] = useState(false);
@@ -221,14 +222,36 @@ const MissionsPage = () => {
 
             {/* 🏆 7️⃣ COMPLETED TASKS SECTION */}
             {activeTab === 'completed' && (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 25 }}>
-                    {completedMissions.length === 0 ? (
-                        <EmptyState message="You haven't completed any missions yet. Time to start your first challenge!" />
-                    ) : (
-                        completedMissions.map((task, i) => (
-                            <CompletedCard key={i} task={task} />
-                        ))
-                    )}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 40 }}>
+                    <section style={{ background: '#f0fdf4', padding: '30px', borderRadius: '24px', border: '1px solid #bbf7d0' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 20 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 15 }}>
+                                <div style={{ background: '#22c55e', padding: '12px', borderRadius: '16px', color: 'white' }}>
+                                    <Leaf size={24} />
+                                </div>
+                                <div>
+                                    <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#166534', margin: 0 }}>4-Day Organic Verification</h2>
+                                    <p style={{ fontSize: '0.9rem', color: '#15803d', margin: 0, marginTop: 4 }}>Upload periodic farm logs and a plant photo to verify 100% organic growth. AI will scan for chemicals.</p>
+                                </div>
+                            </div>
+                            <button 
+                                onClick={() => setShowReportModal(true)}
+                                style={{ background: '#16a34a', color: 'white', padding: '12px 24px', borderRadius: '14px', border: 'none', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
+                            >
+                                <Upload size={18} /> Submit Verification
+                            </button>
+                        </div>
+                    </section>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 25 }}>
+                        {completedMissions.length === 0 ? (
+                            <EmptyState message="You haven't completed any missions yet. Time to start your first challenge!" />
+                        ) : (
+                            completedMissions.map((task, i) => (
+                                <CompletedCard key={i} task={task} />
+                            ))
+                        )}
+                    </div>
                 </div>
             )}
 
@@ -267,6 +290,28 @@ const MissionsPage = () => {
                             } catch (err) { alert(err.message); } finally {
                                 setSubmitting(false);
                             }
+                        }}
+                    />
+                )}
+                {showReportModal && (
+                    <PeriodicReportModal
+                        submitting={submitting}
+                        onClose={() => setShowReportModal(false)}
+                        onSubmit={async (formData) => {
+                            setSubmitting(true);
+                            try {
+                                const res = await apiService.submitPeriodicReport(formData);
+                                if (res.status === 'abnormal_detected') {
+                                    alert(res.message);
+                                } else {
+                                    setReward({ 
+                                        xp: 0, 
+                                        title: 'Verification Complete!', 
+                                        subtitle: 'AI analyzed your farm and confirmed organic growth!' 
+                                    });
+                                }
+                            } catch (err) { alert(err.message); }
+                            finally { setSubmitting(false); setShowReportModal(false); }
                         }}
                     />
                 )}
@@ -562,6 +607,96 @@ const MissionSubmissionModal = ({ task, onClose, onSubmit, submitting }) => {
                 </AnimatePresence>
             </motion.div>
         </div>
+    );
+};
+
+// --- NEW COMPONENT: PeriodicReportModal ---
+// --- NEW COMPONENT: PeriodicReportModal ---
+const PeriodicReportModal = ({ onClose, onSubmit, submitting }) => {
+    const [tasksCompleted, setTasksCompleted] = useState("");
+    const [productsUsed, setProductsUsed] = useState("");
+    
+    // Camera / Image states
+    const [file, setFile] = useState(null);
+    const [fileUrl, setFileUrl] = useState(null);
+    const [showCamera, setShowCamera] = useState(false);
+
+    const handleSubmit = () => {
+        if (!tasksCompleted.trim()) return alert("Please specify the tasks you completed.");
+        if (!productsUsed.trim()) return alert("Please list organic products/fertilizers used.");
+        if (!file) return alert("Please capture a live photo of your plant.");
+        
+        const combinedText = `TASKS COMPLETED: ${tasksCompleted}\nPRODUCTS USED: ${productsUsed}`;
+        
+        const f = new FormData();
+        f.append("report_text", combinedText);
+        f.append("photo", file);
+        onSubmit(f);
+    };
+
+    return (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(10px)', zIndex: 999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+            <motion.div initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
+                style={{ background: 'white', borderRadius: 28, width: '100%', maxWidth: 500, overflow: 'hidden', boxShadow: '0 25px 50px rgba(0,0,0,0.2)' }}>
+                <div style={{ background: '#166534', padding: '25px', color: 'white', position: 'relative' }}>
+                    <h3 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 800 }}>Organic Verification</h3>
+                    <p style={{ margin: 0, opacity: 0.9, fontSize: '0.9rem', marginTop: 5 }}>Submit 4-day organic farm usage</p>
+                    <button onClick={onClose} style={{ position: 'absolute', top: 25, right: 25, background: 'rgba(255,255,255,0.2)', border: 'none', color: 'white', width: 36, height: 36, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                        <X size={18} />
+                    </button>
+                </div>
+                <div style={{ padding: 25, display: 'flex', flexDirection: 'column', gap: 20 }}>
+                    <div>
+                        <label style={{ fontSize: '0.8rem', fontWeight: 800, color: '#166534', textTransform: 'uppercase', marginBottom: 8, display: 'block' }}>Tasks Completed</label>
+                        <textarea 
+                            value={tasksCompleted} onChange={e => setTasksCompleted(e.target.value)} 
+                            placeholder="e.g. Cleared weeds, watered entire south patch..."
+                            style={{ width: '100%', minHeight: 80, padding: 15, borderRadius: 16, border: '2px solid #eeedeb', fontSize: '0.95rem', resize: 'vertical' }}
+                        />
+                    </div>
+                    
+                    <div>
+                        <label style={{ fontSize: '0.8rem', fontWeight: 800, color: '#166534', textTransform: 'uppercase', marginBottom: 8, display: 'block' }}>Organic Products</label>
+                        <textarea 
+                            value={productsUsed} onChange={e => setProductsUsed(e.target.value)} 
+                            placeholder="e.g. Neem oil, cow dung compost..."
+                            style={{ width: '100%', minHeight: 80, padding: 15, borderRadius: 16, border: '2px solid #eeedeb', fontSize: '0.95rem', resize: 'vertical' }}
+                        />
+                    </div>
+                    
+                    <div onClick={() => setShowCamera(true)} style={{ border: '2px dashed #166534', borderRadius: 16, padding: 20, textAlign: 'center', background: '#f0fdf4', cursor: 'pointer', overflow: 'hidden' }}>
+                        {fileUrl ? (
+                            <img src={fileUrl} alt="Preview" style={{ width: '100%', maxHeight: 200, objectFit: 'cover', borderRadius: 10 }} />
+                        ) : (
+                            <>
+                                <Camera size={32} color="#166534" style={{ margin: '0 auto 10px' }}/>
+                                <p style={{ margin: 0, color: '#166534', fontWeight: 900, fontSize: '0.95rem' }}>Capture Live Plant Photo</p>
+                                <p style={{ margin: 0, color: '#15803d', fontSize: '0.8rem', marginTop: 4 }}>For AI chemical growth analysis</p>
+                            </>
+                        )}
+                    </div>
+
+                    <button disabled={submitting} onClick={handleSubmit} style={{ background: submitting ? '#666' : '#22c55e', color: 'white', padding: 18, border: 'none', borderRadius: 16, fontWeight: 800, fontSize: '1.1rem', cursor: submitting ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
+                        {submitting ? <Loader2 className="animate-spin" /> : <ShieldCheck />} Verify Organic Status
+                    </button>
+                </div>
+
+                <AnimatePresence>
+                    {showCamera && (
+                        <CameraCapture 
+                            userLocation={null} // Don't strictly need GPS for organic unless requested
+                            onCapture={(capturedFile, type) => { 
+                                setFile(capturedFile); 
+                                setFileUrl(URL.createObjectURL(capturedFile)); 
+                                setShowCamera(false); 
+                            }}
+                            onClose={() => setShowCamera(false)}
+                        />
+                    )}
+                </AnimatePresence>
+            </motion.div>
+        </motion.div>
     );
 };
 

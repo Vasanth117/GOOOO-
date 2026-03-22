@@ -13,7 +13,7 @@ from app.database import connect_db, close_db
 from app.routes import auth_routes, farm_routes, score_routes, notification_routes
 
 # ─── Phase 2 Routes ──────────────────────────────────────────
-from app.routes import mission_routes, proof_routes
+from app.routes import mission_routes, proof_routes, report_routes
 
 # ─── Phase 3 Routes ──────────────────────────────────────────
 from app.routes import social_routes, leaderboard_routes, grc_routes
@@ -155,6 +155,7 @@ app.include_router(notification_routes.router, prefix=API_PREFIX)
 # Phase 2
 app.include_router(mission_routes.router, prefix=API_PREFIX)
 app.include_router(proof_routes.router, prefix=API_PREFIX)
+app.include_router(report_routes.router, prefix=API_PREFIX)
 
 # Phase 3
 app.include_router(social_routes.router, prefix=API_PREFIX)

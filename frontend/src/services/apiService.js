@@ -61,17 +61,19 @@ export const apiService = {
     triggerAiMissions: () => apiRequest('/missions/ai-assign'),
     getMissionHistory: (page = 1) => apiRequest(`/missions/history?page=${page}`),
     getCommunityMissions: () => apiRequest('/missions/community-active'),
-    submitPeriodicReport: (formData) => {
+    submitPeriodicReport: async (formData) => {
         const token = localStorage.getItem('access_token');
-        const params = new URLSearchParams();
-        for (const [key, value] of formData.entries()) {
-            if (key !== 'file') params.append(key, value);
-        }
-        return fetch(`${BASE_URL}/missions/periodic-reports?${params.toString()}`, {
+        const res = await fetch(`${BASE_URL}/reports/submit`, {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${token}` },
             body: formData
-        }).then(res => res.json());
+        });
+        const data = await res.json();
+        if (!res.ok) {
+            console.error("REPORT SUBMISSION FAILED:", data);
+            throw new Error(data.message || data.detail || 'Report submission failed');
+        }
+        return data;
     },
     submitMissionProof: async (formData) => {
         const token = localStorage.getItem('access_token');

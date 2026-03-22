@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 if settings.GROQ_API_KEY:
     client = groq.AsyncGroq(api_key=settings.GROQ_API_KEY)
     TEXT_MODEL = "llama-3.1-8b-instant"
-    VISION_MODEL = "llama-3.2-11b-vision-preview"
+    VISION_MODEL = "llama-3.2-90b-vision-preview"
 else:
     client = None
     logger.warning("GROQ_API_KEY not set. AI features will use mock responses.")
@@ -23,15 +23,17 @@ ELEVENLABS_URL = "https://api.elevenlabs.io/v1/text-to-speech"
 DEFAULT_VOICE_ID = "21m00Tcm4TlvDq8ikWAM"
  
 def _clean_json_response(content: str) -> str:
-    """Strips markdown code blocks (```json ... ```) from the LLM output if present."""
+    """Extracts JSON block from the LLM output, heavily guarding against conversational artifacts."""
     content = content.strip()
-    if content.startswith("```json"):
-        content = content[7:]
-    if content.startswith("```"):
-        content = content[3:]
-    if content.endswith("```"):
-        content = content[:-3]
-    return content.strip()
+    
+    # Aggressive JSON extraction: finds the first '{' and the last '}'
+    start_idx = content.find('{')
+    end_idx = content.rfind('}')
+    
+    if start_idx != -1 and end_idx != -1 and end_idx >= start_idx:
+        return content[start_idx:end_idx+1]
+        
+    return content
 
 # ─── YOLOv8 CROP DISEASE MODEL ────────────────────────────────
 _yolo_model = None
@@ -434,7 +436,7 @@ async def analyze_farming_proof(image_data: bytes, mission_text: str, system_pro
                 }
             ],
             model=VISION_MODEL,
-            response_format={"type": "json_object"},
+            max_tokens=800,  # Required by Groq Vision
             temperature=0.2
         )
         content = response.choices[0].message.content
@@ -442,9 +444,9 @@ async def analyze_farming_proof(image_data: bytes, mission_text: str, system_pro
     except Exception as e:
         logger.error(f"Proof analysis error: {e}")
         return {
-            "is_valid": True,
-            "confidence": 0.5,
-            "analysis_notes": "AI analysis error. Punting to manual review."
+            "is_valid": False,  # Changed to False so it strictly rejects on API failure
+            "confidence": 0.0,
+            "analysis_notes": f"API Error: {str(e)}. Please try again."
         }
 
 

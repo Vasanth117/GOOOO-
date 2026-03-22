@@ -242,7 +242,7 @@ const MissionsPage = () => {
                             setSubmitting(true);
                             try {
                                 formData.append('mission_progress_id', selectedTask.progress_id);
-                                await apiService.submitMissionProof(formData);
+                                const res = await apiService.submitMissionProof(formData);
                                 const [m, s] = await Promise.all([
                                     apiService.getMissions(),
                                     apiService.getStats()
@@ -254,7 +254,7 @@ const MissionsPage = () => {
                                     setReward({ 
                                         xp: 0, 
                                         title: 'Verification Pending', 
-                                        subtitle: 'AI is analyzing your task. Points will be awarded after verification.' 
+                                        subtitle: 'AI has analyzed your task. Awaiting expert review to unlock points.' 
                                     });
                                 } else {
                                     setReward({ 
@@ -365,13 +365,25 @@ const ActiveTaskCard = ({ task, onComplete }) => (
 
         <div style={{ marginBottom: 20 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', fontWeight: 800, color: '#666', marginBottom: 8 }}>
-                <span>Next: {task.next_step || 'Verify in app'}</span>
+                <span>{task.status === 'pending_review' ? 'Awaiting Expert Review' : `Next: ${task.next_step || 'Verify in app'}`}</span>
                 <span>{task.progress_percentage || 0}%</span>
             </div>
             <div style={{ height: 10, background: '#fcfcfc', border: '1px solid #f0f0f0', borderRadius: 5, overflow: 'hidden' }}>
                 <motion.div initial={{ width: 0 }} animate={{ width: `${task.progress_percentage || 0}%` }} style={{ height: '100%', background: '#d97706', borderRadius: 5 }} />
             </div>
         </div>
+
+        {task.status === 'pending_review' && task.ai_analysis && (
+            <div style={{ background: '#f8faf8', padding: '12px 16px', borderRadius: 16, border: '1.5px solid #e8eee8', marginBottom: 20 }}>
+                <div style={{ fontSize: '0.75rem', fontWeight: 900, color: '#2d5a27', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <Brain size={14} /> AI Analysis Report
+                </div>
+                <div style={{ fontSize: '0.8rem', color: '#444', lineHeight: 1.5 }}>
+                    <strong>Confidence:</strong> {Math.round(task.ai_analysis.confidence * 100)}%<br/>
+                    <strong>Notes:</strong> {task.ai_analysis.notes}
+                </div>
+            </div>
+        )}
 
         <button 
             style={{ 
@@ -393,7 +405,7 @@ const ActiveTaskCard = ({ task, onComplete }) => (
             disabled={task.status === 'pending_review'}
         >
             {task.status === 'pending_review' ? (
-                <><Loader2 className="animate-spin" size={18} /> AI Analyzing...</>
+                <><ShieldCheck size={18} /> In Expert Review</>
             ) : (
                 <><Camera size={18} /> Upload Proof</>
             )}

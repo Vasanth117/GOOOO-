@@ -140,10 +140,9 @@ async def submit_proof(
     # 7. AI Vision Analysis (if image)
     ai_status_msg = ""
     if file_type == "image":
+        # ── EXCEPTION SCOPE FIX: Only catch unexpected AI API errors, not our own HTTPExceptions
         try:
             # We need to re-read for AI or pass the content 
-            # (already read but _save_file might have modified state, though it's bytes)
-            # Re-reading to be safe
             await file.seek(0)
             img_bytes = await file.read()
             
@@ -172,55 +171,51 @@ async def submit_proof(
         "{\"is_valid\": boolean, \"confidence\": 0.0-1.0, \"analysis_notes\": \"Detailed audit reason\"}"
     )
             ai_analysis = await ai_service.analyze_farming_proof(img_bytes, mission_context, system_prompt=system_prompt)
-            
-            is_valid = ai_analysis.get("is_valid", False)
-            confidence = ai_analysis.get("confidence", 0.0)
-            notes = ai_analysis.get("analysis_notes", "AI could not identify the task in this proof.")
-
-            proof.ai_result = {"is_valid": is_valid, "confidence": confidence, "notes": notes}
-            
-            # ── STRICTURE ──────────────────────────────────────────
-            # Rejection: If AI says it's not valid OR if confidence is extremely low (< 0.4)
-            if not is_valid or confidence < 0.4:
-                proof.status = ProofStatus.REJECTED
-                mp.status = MissionStatus.ACTIVE # Re-activate mission
-                await proof.save()
-                await mp.save()
-                error_response(f"AI Audit Failed: {notes}", 400)
-
-            # High confidence auto-approval OR Community tasks (always verified by AI)
-            from app.models.mission import Mission, MissionType
-            mission_template = await Mission.get(mp.mission_id)
-            is_community = mission_template.mission_type == MissionType.COMMUNITY if mission_template else False
-
-            if (is_valid and confidence >= 0.9) or (is_community and is_valid):
-                proof.status = ProofStatus.APPROVED
-                await proof.save()
-                await complete_mission(mission_progress=mp, approved_by="AI_SYSTEM_VERIFIED")
-                ai_status_msg = "AI has instantly verified your work! "
-                return {
-                    "proof_id": str(proof.id),
-                    "status": "approved",
-                    "ai_analyzed": True,
-                    "message": f"Mission Complete! {ai_status_msg}Points awarded.",
-                    "file_url": file_url,
-                }
-            else:
-                proof.status = ProofStatus.PENDING_REVIEW
-                ai_status_msg = "Proof is undergoing secondary verification. "
         except Exception as e:
             logger.error(f"AI Vision Exception: {e}")
-            proof.status = ProofStatus.PENDING_REVIEW
-            mp.status = MissionStatus.PENDING_REVIEW
-            ai_status_msg = "AI verification skipped due to system load. Punted to manual review. "
+            proof.status = ProofStatus.REJECTED
+            mp.status = MissionStatus.ACTIVE
+            await proof.save()
+            await mp.save()
+            error_response("AI System is currently analyzing too many tasks. Please try submitting again in a few moments.", 503)
+
+        # Process the result outside the try block so HTTPExceptions aren't caught
+        is_valid = ai_analysis.get("is_valid", False)
+        confidence = ai_analysis.get("confidence", 0.0)
+        notes = ai_analysis.get("analysis_notes", "AI could not identify the task in this proof.")
+
+        proof.ai_result = {"is_valid": is_valid, "confidence": confidence, "notes": notes}
+        
+        # ── 100% AUTOMATED AI ARBITER (NO MANUAL EXPERT REVIEW) ──────────────
+        
+        # 1. REJECT if AI is unsure or says it's unrelated
+        if not is_valid or confidence < 0.65:
+            proof.status = ProofStatus.REJECTED
+            mp.status = MissionStatus.ACTIVE # Re-activate mission so they can try again
+            await proof.save()
+            await mp.save()
+            error_response(f"AI Audit Failed ({int(confidence*100)}% Match): {notes}", 400)
+
+        # 2. APPROVE instantly if AI clears it (Fully Automated Ecosystem)
+        proof.status = ProofStatus.APPROVED
+        await proof.save()
+        await complete_mission(mission_progress=mp, approved_by="AI_SYSTEM_VERIFIED")
+        
+        return {
+            "proof_id": str(proof.id),
+            "status": "approved",
+            "ai_analyzed": True,
+            "message": f"Mission Complete! AI has verified your work instantly with {int(confidence*100)}% confidence. Points awarded.",
+            "file_url": file_url,
+        }
     else:
-        proof.status = ProofStatus.PENDING_REVIEW
-
-    await proof.save()
-
-    # 8. Update mission progress status
-    mp.status = MissionStatus.PENDING_REVIEW
-    mp.proof_submission_id = str(proof.id)
+        # Non-image files (videos) are not currently supported by Groq Vision API
+        # Reject immediately instead of punting to non-existent manual experts.
+        proof.status = ProofStatus.REJECTED
+        mp.status = MissionStatus.ACTIVE
+        await proof.save()
+        await mp.save()
+        error_response("Currently, the AI Auditor only accepts clear photo images. Please take a photo of your task instead of a video.", 400)
     if not mp.started_at:
         mp.started_at = datetime.utcnow()
     await mp.save()

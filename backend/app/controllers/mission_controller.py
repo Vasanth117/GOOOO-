@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 async def _enrich_progress(mp: MissionProgress) -> dict:
     """Attach mission template details to a MissionProgress record."""
     mission = await Mission.get(mp.mission_id)
-    return {
+    base_dict = {
         "progress_id": str(mp.id),
         "mission_id": mp.mission_id,
         "title": mission.title if mission else "Unknown",
@@ -39,6 +39,18 @@ async def _enrich_progress(mp: MissionProgress) -> dict:
         "expires_at": mp.expires_at.isoformat(),
         "completed_at": mp.completed_at.isoformat() if mp.completed_at else None,
     }
+    
+    # Include AI analysis details if there is a pending proof
+    if mp.proof_submission_id:
+        try:
+            from app.models.proof_submission import ProofSubmission
+            proof = await ProofSubmission.get(mp.proof_submission_id)
+            if proof and getattr(proof, "ai_result", None):
+                base_dict["ai_analysis"] = proof.ai_result
+        except Exception as e:
+            logger.error(f"Error fetching proof for mission progress {mp.id}: {e}")
+
+    return base_dict
 
 
 # ─── FARMER ACTIONS ──────────────────────────────────────────

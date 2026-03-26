@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, Query
+from fastapi.encoders import jsonable_encoder
 from app.controllers import leaderboard_controller
 from app.middleware.auth_middleware import get_current_user, require_farmer
 from app.models.user import User
@@ -26,10 +27,10 @@ async def get_leaderboard(
         limit=limit,
         current_user=current_user,
     )
-    return success_response(result)
+    return success_response(jsonable_encoder(result))
 
 
 @router.get("/me/rank", summary="Get my rank across all leaderboards")
 async def get_my_rank(current_user: User = Depends(require_farmer)):
     result = await leaderboard_controller.get_my_rank(current_user)
-    return success_response(result)
+    return success_response(jsonable_encoder(result))

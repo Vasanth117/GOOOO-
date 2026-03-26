@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, Query, File, UploadFile, Form
+from fastapi.encoders import jsonable_encoder
 from typing import Optional, List
 from app.schemas.social_schema import CreatePostRequest, CreateCommentRequest
 from app.controllers import social_controller
@@ -19,7 +20,7 @@ async def get_feed(
     current_user: User = Depends(get_current_user),
 ):
     result = await social_controller.get_feed(current_user, page=page, limit=limit, post_type=post_type)
-    return success_response(result)
+    return success_response(jsonable_encoder(result))
 
 
 # ─── POSTS ───────────────────────────────────────────────────
@@ -42,7 +43,7 @@ async def create_post(
         mission_progress_id=mission_progress_id,
         image=image
     )
-    return success_response(result, "Post created")
+    return success_response(jsonable_encoder(result), "Post created")
 
 
 @router.get("/posts/mine", summary="Get my posts")
@@ -52,7 +53,7 @@ async def get_my_posts(
     current_user: User = Depends(get_current_user),
 ):
     result = await social_controller.get_my_posts(current_user, page=page, limit=limit)
-    return success_response(result)
+    return success_response(jsonable_encoder(result))
 
 
 @router.delete("/posts/{post_id}", summary="Delete a post")
@@ -66,7 +67,7 @@ async def delete_post(post_id: str, current_user: User = Depends(get_current_use
 @router.post("/posts/{post_id}/like", summary="Like or unlike a post (toggle)")
 async def toggle_like(post_id: str, current_user: User = Depends(get_current_user)):
     result = await social_controller.toggle_like(post_id, current_user)
-    return success_response(result)
+    return success_response(jsonable_encoder(result))
 
 
 # ─── COMMENTS ────────────────────────────────────────────────
@@ -78,7 +79,7 @@ async def add_comment(
     current_user: User = Depends(get_current_user),
 ):
     result = await social_controller.add_comment(post_id, current_user, data)
-    return success_response(result, "Comment added")
+    return success_response(jsonable_encoder(result), "Comment added")
 
 
 @router.get("/posts/{post_id}/comments", summary="Get comments on a post")
@@ -89,7 +90,7 @@ async def get_comments(
     current_user: User = Depends(get_current_user),
 ):
     result = await social_controller.get_comments(post_id, page=page, limit=limit)
-    return success_response(result)
+    return success_response(jsonable_encoder(result))
 
 
 # ─── FOLLOW ──────────────────────────────────────────────────
@@ -97,7 +98,7 @@ async def get_comments(
 @router.post("/follow/{target_user_id}", summary="Follow or unfollow a user (toggle)")
 async def toggle_follow(target_user_id: str, current_user: User = Depends(get_current_user)):
     result = await social_controller.toggle_follow(target_user_id, current_user)
-    return success_response(result)
+    return success_response(jsonable_encoder(result))
 
 
 # ─── PROFILE ─────────────────────────────────────────────────
@@ -105,7 +106,7 @@ async def toggle_follow(target_user_id: str, current_user: User = Depends(get_cu
 @router.get("/profile/{user_id}", summary="View a user's public profile")
 async def get_profile(user_id: str, current_user: User = Depends(get_current_user)):
     result = await social_controller.get_profile(user_id, current_user)
-    return success_response(result)
+    return success_response(jsonable_encoder(result))
 
 
 @router.get("/profile/{user_id}/followers", summary="Get followers list")
@@ -116,7 +117,7 @@ async def get_followers(
     current_user: User = Depends(get_current_user),
 ):
     result = await social_controller.get_followers(user_id, page=page, limit=limit)
-    return success_response(result)
+    return success_response(jsonable_encoder(result))
 
 
 @router.get("/profile/{user_id}/following", summary="Get following list")
@@ -127,4 +128,4 @@ async def get_following(
     current_user: User = Depends(get_current_user),
 ):
     result = await social_controller.get_following(user_id, page=page, limit=limit)
-    return success_response(result)
+    return success_response(jsonable_encoder(result))

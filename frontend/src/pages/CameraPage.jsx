@@ -34,11 +34,11 @@ const CameraPage = () => {
 
     useEffect(() => {
         startCamera();
-        fetchLocation();
+        const watchId = startGPS();
         const timeInt = setInterval(updateTime, 1000);
         return () => {
-            // CRITICAL: Cleanup MUST stop hardware stream
             stopCamera();
+            if (watchId) navigator.geolocation.clearWatch(watchId);
             clearInterval(timeInt);
         };
     }, []);
@@ -53,16 +53,12 @@ const CameraPage = () => {
 
     const startCamera = async () => {
         try {
-            // Stop any existing stream before starting a new one
             stopCamera();
-            
             const mediaStream = await navigator.mediaDevices.getUserMedia({
                 video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } },
                 audio: true
             });
-            
-            streamRef.current = mediaStream; // Keep track in ref for cleanup
-            
+            streamRef.current = mediaStream;
             if (videoRef.current) {
                 videoRef.current.srcObject = mediaStream;
                 videoRef.current.play();
@@ -75,24 +71,45 @@ const CameraPage = () => {
     const stopCamera = () => {
         if (streamRef.current) {
             streamRef.current.getTracks().forEach(track => {
-                track.stop();   // Explicitly kill hardware light
+                track.stop();
                 track.enabled = false;
             });
             streamRef.current = null;
         }
     };
 
-    const fetchLocation = () => {
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition((pos) => {
+    const startGPS = () => {
+        if (!navigator.geolocation) return null;
+        return navigator.geolocation.watchPosition(
+            async (pos) => {
                 const { latitude, longitude } = pos.coords;
                 setLocation(prev => ({
                     ...prev,
                     lat: latitude.toFixed(6),
                     lng: longitude.toFixed(6),
                 }));
-            });
-        }
+                
+                // Fetch Address dynamically via OpenStreetMap (Free)
+                try {
+                    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=10`);
+                    const data = await res.json();
+                    if (data.display_name) {
+                        const parts = data.display_name.split(',');
+                        const addr = parts.slice(0, 3).join(',');
+                        setLocation(prev => ({
+                            ...prev,
+                            address: addr,
+                            city: data.address.city || data.address.town || 'Nearby',
+                            region: data.address.state || 'India'
+                        }));
+                    }
+                } catch (e) {
+                    console.warn("Geocoding failed:", e);
+                }
+            },
+            (err) => console.warn("GPS ERROR:", err),
+            { enableHighAccuracy: true, maximumAge: 10000 }
+        );
     };
 
     const capturePhoto = () => {

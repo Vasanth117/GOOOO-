@@ -62,7 +62,10 @@ export const AuthProvider = ({ children }) => {
             body: JSON.stringify({ name, email, password, role }),
         });
         const data = await res.json();
-        if (!res.ok) throw new Error(data.detail || data.message || 'Registration failed');
+        if (!res.ok) {
+            const errorMsg = data.detail ? (Array.isArray(data.detail) ? data.detail.map(e => e.msg).join(', ') : data.detail) : (data.message || 'Registration failed');
+            throw new Error(errorMsg);
+        }
 
         const { access_token, refresh_token, user: userData } = data.data;
         localStorage.setItem('access_token', access_token);

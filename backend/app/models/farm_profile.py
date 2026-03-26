@@ -6,9 +6,15 @@ from enum import Enum
 
 
 class SoilType(str, Enum):
+    ALLUVIAL = "alluvial"
+    BLACK = "black"
+    RED = "red"
+    LATERITE = "laterite"
+    DESERT = "desert"
     CLAY = "clay"
     SANDY = "sandy"
     LOAM = "loam"
+    LOAMY = "loamy"
     SILT = "silt"
     PEAT = "peat"
     CHALK = "chalk"
@@ -19,6 +25,7 @@ class IrrigationType(str, Enum):
     FLOOD = "flood"
     SPRINKLER = "sprinkler"
     RAIN_FED = "rain_fed"
+    RAINFED = "rainfed"
     MANUAL = "manual"
 
 

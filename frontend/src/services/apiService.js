@@ -240,7 +240,6 @@ export const apiService = {
         body: JSON.stringify(prefs)
     }),
 
-    getMyRank: () => apiRequest('/score/stats'),
     searchUsers: (q, page = 1, limit = 10) => apiRequest(`/user/search?q=${encodeURIComponent(q)}&page=${page}&limit=${limit}`),
 
     // ── Marketplace ─────────────────────────────────────────────

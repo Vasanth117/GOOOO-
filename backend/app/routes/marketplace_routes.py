@@ -80,8 +80,40 @@ async def place_order(
 
 
 @router.get("/orders/me", summary="Buyer: View order tracking history")
-async def get_my_orders(current_user: User = Depends(get_current_user)):
-    result = await marketplace_controller.get_my_orders(current_user)
+async def get_my_orders(user: User = Depends(get_current_user)):
+    result = await marketplace_controller.get_my_orders(user)
+    return success_response(result)
+
+
+# ─── CART ROUTES ──────────────────────────────────────────────
+
+@router.get("/cart", summary="Get user's shopping cart")
+async def get_cart(user: User = Depends(get_current_user)):
+    result = await marketplace_controller.get_cart(user)
+    return success_response(result)
+
+
+@router.post("/cart/add/{product_id}", summary="Add a product to the cart")
+async def add_to_cart(product_id: str, quantity: int = 1, user: User = Depends(get_current_user)):
+    result = await marketplace_controller.add_to_cart(user, product_id, quantity)
+    return success_response(result)
+
+
+@router.delete("/cart/remove/{product_id}", summary="Remove a product from the cart")
+async def remove_from_cart(product_id: str, user: User = Depends(get_current_user)):
+    result = await marketplace_controller.remove_from_cart(user, product_id)
+    return success_response(result)
+
+
+@router.delete("/cart/clear", summary="Clear all items from the cart")
+async def clear_cart(user: User = Depends(get_current_user)):
+    result = await marketplace_controller.clear_cart(user)
+    return success_response(result)
+
+
+@router.get("/seller/{seller_id}/profile", summary="High-Trust Seller Profile View")
+async def get_seller_profile_full(seller_id: str):
+    result = await marketplace_controller.get_seller_profile_full(seller_id)
     return success_response(result)
 
 

@@ -110,7 +110,33 @@ export const apiService = {
         method: 'POST',
         body: JSON.stringify(data)
     }),
-    getMyOrders: () => apiRequest('/marketplace/orders/me'),
+    async getMyOrders() {
+        return await apiRequest('/marketplace/orders/me');
+    },
+
+    // CART ACTIONS
+    async getCart() {
+        return await apiRequest('/marketplace/cart');
+    },
+    async addToCart(productId, quantity = 1) {
+        if (!productId || productId === 'undefined' || productId === 'null' || String(productId).startsWith('m')) {
+            console.warn("Skipping addToCart for invalid/mock ID:", productId);
+            return null;
+        }
+        return await apiRequest(`/marketplace/cart/add/${productId}?quantity=${quantity}`, { method: 'POST' });
+    },
+    async removeFromCart(productId) {
+        return await apiRequest(`/marketplace/cart/remove/${productId}`, { method: 'DELETE' });
+    },
+    async clearCart() {
+        return await apiRequest('/marketplace/cart/clear', { method: 'DELETE' });
+    },
+    async getSellerProfileFull(sellerId) {
+        if (!sellerId || sellerId === 'undefined' || sellerId === 'null') {
+            return null;
+        }
+        return await apiRequest(`/marketplace/seller/${sellerId}/profile`);
+    },
     getSellerDashboard: () => apiRequest('/marketplace/seller/dashboard'),
     createProduct: (data) => apiRequest('/marketplace/products', {
         method: 'POST',

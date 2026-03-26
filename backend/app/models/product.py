@@ -6,12 +6,12 @@ from enum import Enum
 
 
 class ProductCategory(str, Enum):
-    FERTILIZER = "fertilizer"
-    PESTICIDE = "pesticide"
+    FERTILIZER = "fertilizers"
+    PESTICIDE = "pesticides"
     SEEDS = "seeds"
     TOOLS = "tools"
     IRRIGATION = "irrigation"
-    CROP = "crop"
+    CROP = "crops"
     CONSULTATION = "consultation"
     OTHER = "other"
 
@@ -35,6 +35,10 @@ class Product(Document):
     views_count: int = 0
     clicks_count: int = 0
     sales_count: int = 0
+    
+    # Organic Proof & Business Suite Expansion
+    growth_stages: List[dict] = []    # List of {stage: str, date: str, proof: url}
+    farming_tasks: List[dict] = []    # List of {task: str, status: str}
     
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)

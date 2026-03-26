@@ -10,7 +10,7 @@ import {
     Loader2, Camera, Save, X, Navigation, Clock,
     Droplet, Wind, Sun, Package, RefreshCw, Phone,
     Activity, BarChart2, Target, Users, Lock, Unlock,
-    UserPlus, UserMinus, UserCheck, Heart, Power
+    UserPlus, UserMinus, UserCheck, Heart, Power, Maximize
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { apiService } from '../services/apiService';
@@ -399,46 +399,82 @@ const ProfilePage = () => {
                             {activeTab === 'Overview' && (
                                 <motion.div key="ov" className="profile-overview-grid" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
                                     <div className="pov-col">
-                                        <div className="profile-card">
+                                        <div className="profile-card sustainability-card">
                                             <div className="pcard-header">
-                                                <div className="pcard-title"><Leaf size={18} color="#2d5a27" /><h3>Sustainability Status</h3></div>
+                                                <div className="pcard-title">
+                                                    <div className="pcard-icon-wrap"><Leaf size={20} /></div>
+                                                    <h3>Sustainability Status</h3>
+                                                </div>
+                                                <TrendingUp size={18} className="text-success" />
                                             </div>
                                             <div className="sustainability-display">
-                                                <div className="sust-num">{farm.sustainability_score || 0}</div>
-                                                <div className="sust-label">{farm.farming_practices || 'Sustainable'} Farmer</div>
+                                                <div className="sust-num-wrap">
+                                                    <span className="sust-num">{farm.sustainability_score || 0}</span>
+                                                    <span className="sust-max">/100</span>
+                                                </div>
+                                                <div className="sust-status-pill">
+                                                    <Sprout size={14} />
+                                                    {farm.farming_practices || 'Sustainable'} Expert
+                                                </div>
                                             </div>
-                                            <div className="sust-bar-bg">
-                                                <motion.div className="sust-bar-fill" initial={{ width: 0 }} animate={{ width: `${Math.min(farm.sustainability_score || 0, 100)}%` }} />
+                                            <div className="sust-progress-container">
+                                                <div className="sust-bar-bg">
+                                                    <motion.div 
+                                                        className="sust-bar-fill" 
+                                                        initial={{ width: 0 }} 
+                                                        animate={{ width: `${Math.min(farm.sustainability_score || 0, 100)}%` }} 
+                                                        transition={{ duration: 1, ease: "easeOut" }}
+                                                    />
+                                                </div>
+                                                <div className="sust-points-info">
+                                                    <span>0 pts</span>
+                                                    <span>100 pts</span>
+                                                </div>
                                             </div>
                                         </div>
 
-                                        <div className="profile-impact-row">
+                                        <div className="profile-impact-grid">
                                             {[
-                                                { label: 'Total XP', val: stats.total_score || 0, icon: Zap, color: '#d4af37', bg: '#fffbeb' },
-                                                { label: 'Mission Wins', val: stats.tasks_completed || 0, icon: CheckCircle2, color: '#2d5a27', bg: '#f0fdf4' },
-                                                { label: 'Hot Streak', val: stats.streak_current || 0, icon: Flame, color: '#e63946', bg: '#fff1f2' },
+                                                { label: 'Total XP', val: stats.total_score || 0, icon: Zap, color: '#f59e0b', bg: '#fffbeb' },
+                                                { label: 'Mission Wins', val: stats.tasks_completed || 0, icon: Trophy, color: '#10b981', bg: '#f0fdf4' },
+                                                { label: 'Hot Streak', val: stats.streak_current || 0, icon: Flame, color: '#ef4444', bg: '#fef2f2' },
                                             ].map(item => (
-                                                <div key={item.label} className="profile-impact-card" style={{ '--ic-color': item.color, '--ic-bg': item.bg }}>
-                                                    <item.icon size={22} color={item.color} />
-                                                    <div className="ic-val">{item.val}</div>
-                                                    <div className="ic-label">{item.label}</div>
+                                                <div key={item.label} className="impact-stat-card">
+                                                    <div className="isc-icon" style={{ backgroundColor: item.bg, color: item.color }}>
+                                                        <item.icon size={20} />
+                                                    </div>
+                                                    <div className="isc-content">
+                                                        <div className="isc-val">{item.val}</div>
+                                                        <div className="isc-label">{item.label}</div>
+                                                    </div>
                                                 </div>
                                             ))}
                                         </div>
                                     </div>
 
                                     <div className="pov-col">
-                                        <div className="profile-card">
-                                            <h3 className="pcard-section-title">🚜 Farm Profile</h3>
-                                            <div className="farm-passport-grid">
+                                        <div className="profile-card farm-identity-card">
+                                            <div className="pcard-header">
+                                                <div className="pcard-title">
+                                                    <div className="pcard-icon-wrap"><Package size={20} /></div>
+                                                    <h3>Farm Profile</h3>
+                                                </div>
+                                            </div>
+                                            <div className="farm-spec-grid">
                                                 {[
-                                                    ['Name', farm.farm_name],
-                                                    ['Size', farm.farm_size_acres ? `${farm.farm_size_acres} Ac` : undefined],
-                                                    ['Soil', farm.soil_type],
-                                                    ['Crops', farm.crop_types?.slice(0, 2).join(', ')],
-                                                    ['Method', farm.farming_practices],
-                                                ].map(([l, v]) => (
-                                                    <div key={l} className="fpp-item"><span>{l}</span><strong>{v || 'N/A'}</strong></div>
+                                                    { label: 'Farm Name', val: farm.farm_name, icon: MapPin },
+                                                    { label: 'Acreage', val: farm.farm_size_acres ? `${farm.farm_size_acres} Ac` : 'N/A', icon: Maximize },
+                                                    { label: 'Soil Type', val: farm.soil_type, icon: Droplet },
+                                                    { label: 'Primary Crop', val: farm.crop_types?.[0], icon: Sprout },
+                                                    { label: 'Methodology', val: farm.farming_practices, icon: ShieldCheck },
+                                                ].map((item, idx) => (
+                                                    <div key={idx} className="spec-item">
+                                                        <div className="spec-icon"><item.icon size={16} /></div>
+                                                        <div className="spec-info">
+                                                            <span className="spec-label">{item.label}</span>
+                                                            <span className="spec-val">{item.val || 'N/A'}</span>
+                                                        </div>
+                                                    </div>
                                                 ))}
                                             </div>
                                         </div>

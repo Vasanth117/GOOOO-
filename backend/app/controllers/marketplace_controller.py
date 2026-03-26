@@ -13,11 +13,24 @@ from app.models.review import ProductReview
 from app.schemas.marketplace_schema import CreateProductRequest, UpdateProductRequest, CreateOrderRequest
 from app.services.notification_service import send_notification
 from app.models.notification import NotificationType
+from app.models.post import Post
+from app.models.mission import Mission
+from app.models.cart import Cart
 from app.utils.response_utils import error_response, not_found
 import logging
 from datetime import datetime, timedelta
+from pydantic import ValidationError
 
 logger = logging.getLogger(__name__)
+
+async def safe_get(model, doc_id):
+    """Safely get a document, handling invalid ID formats like 'm1' or 'undefined'."""
+    if not doc_id or str(doc_id).lower() in ["undefined", "null"]:
+        return None
+    try:
+        return await model.get(doc_id)
+    except (ValidationError, Exception):
+        return None
 
 
 # ─── PRODUCT ACTIONS ─────────────────────────────────────────
@@ -37,6 +50,8 @@ async def create_product(user: User, data: CreateProductRequest) -> dict:
         is_eco_certified=getattr(data, "is_eco_certified", False),
         proof_images=getattr(data, "proof_images", []),
         discount_percent=getattr(data, "discount_percent", 0.0),
+        growth_stages=getattr(data, "growth_stages", []),
+        farming_tasks=getattr(data, "farming_tasks", []),
     )
     await product.insert()
     logger.info(f"Product {product.id} created by seller {user.id}")
@@ -102,7 +117,7 @@ async def get_products(
 
 
 async def get_product_detail(product_id: str) -> dict:
-    product = await Product.get(product_id)
+    product = await safe_get(Product, product_id)
     if not product:
         not_found("Product")
     
@@ -114,7 +129,7 @@ async def get_product_detail(product_id: str) -> dict:
 
 
 async def update_product(product_id: str, user: User, data: UpdateProductRequest) -> dict:
-    product = await Product.get(product_id)
+    product = await safe_get(Product, product_id)
     if not product:
         not_found("Product")
     
@@ -131,7 +146,7 @@ async def update_product(product_id: str, user: User, data: UpdateProductRequest
 
 
 async def delete_product(product_id: str, user: User) -> dict:
-    product = await Product.get(product_id)
+    product = await safe_get(Product, product_id)
     if not product:
         not_found("Product")
     
@@ -302,17 +317,20 @@ async def get_seller_dashboard(user: User) -> dict:
             "avg_rating": round(avg_rating, 1),
             "active_sales": len(active_orders)
         },
+        "total_income": total_earnings,
+        "sales": total_orders_count,
         "earnings_breakdown": [{"date": k, "amount": v} for k, v in sorted(daily_stats.items())],
         "recent_orders": [await _order_to_dict(o) for o in all_orders[:10]],
+        "products": [await _product_to_dict(p) for p in my_products],
         "inventory": [await _product_to_dict(p) for p in my_products],
-        "top_products": sorted([await _product_to_dict(p) for p in my_products], key=lambda x: x["sales"], reverse=True)[:5]
+        "top_products": sorted([await _product_to_dict(p) for p in my_products], key=lambda x: x.get("sales_count", 0), reverse=True)[:5]
     }
 
 
 # ─── REVIEW ACTIONS ──────────────────────────────────────────
 
 async def add_review(user: User, product_id: str, rating: int, comment: str) -> dict:
-    product = await Product.get(product_id)
+    product = await safe_get(Product, product_id)
     if not product:
         not_found("Product")
     
@@ -353,7 +371,123 @@ async def reply_to_review(review_id: str, user: User, reply: str) -> dict:
     return {"message": "Reply saved"}
 
 
-# ─── SERIALIZERS ──────────────────────────────────────────────
+async def get_cart(user: User) -> dict:
+    """Get the user's cart."""
+    cart = await Cart.find_one({"user_id": str(user.id)})
+    if not cart:
+        cart = Cart(user_id=str(user.id), items=[])
+        await cart.insert()
+    
+    # Enrich with product details
+    enriched_items = []
+    total_value = 0
+    for item in cart.items:
+        try:
+            prod = await Product.get(item["product_id"])
+        except Exception:
+            prod = None
+            
+        if prod:
+            item_dict = {
+                **item,
+                "product_name": prod.name,
+                "product_price": prod.price,
+                "product_image": prod.image_url,
+                "seller_id": prod.seller_id
+            }
+            enriched_items.append(item_dict)
+            total_value += prod.price * item.get("quantity", 1)
+            
+    return {
+        "items": enriched_items,
+        "total_items": len(enriched_items),
+        "total_value": total_value
+    }
+
+
+async def add_to_cart(user: User, product_id: str, quantity: int = 1) -> dict:
+    """Add or update an item in the cart."""
+    # Handle invalid ID formats (e.g. mock IDs 'm1')
+    try:
+        product = await safe_get(Product, product_id)
+    except Exception:
+        product = None
+        
+    if not product:
+        not_found("Product not found")
+
+    cart = await Cart.find_one({"user_id": str(user.id)})
+    if not cart:
+        cart = Cart(user_id=str(user.id), items=[])
+        await cart.insert()
+
+    # Check if item already exists
+    existing = next((i for i in cart.items if i["product_id"] == product_id), None)
+    if existing:
+        existing["quantity"] += quantity
+    else:
+        cart.items.append({
+            "product_id": product_id,
+            "quantity": quantity,
+            "added_at": datetime.utcnow()
+        })
+    
+    cart.updated_at = datetime.utcnow()
+    await cart.save()
+    return await get_cart(user)
+
+
+async def remove_from_cart(user: User, product_id: str) -> dict:
+    """Remove item from cart."""
+    cart = await Cart.find_one({"user_id": str(user.id)})
+    if not cart:
+        return {"items": [], "total_items": 0, "total_value": 0}
+    
+    cart.items = [i for i in cart.items if i["product_id"] != product_id]
+    cart.updated_at = datetime.utcnow()
+    await cart.save()
+    return await get_cart(user)
+
+
+async def clear_cart(user: User) -> dict:
+    """Clear whole cart."""
+    cart = await Cart.find_one({"user_id": str(user.id)})
+    if cart:
+        cart.items = []
+        cart.updated_at = datetime.utcnow()
+        await cart.save()
+    return {"items": [], "total_items": 0, "total_value": 0}
+
+
+# ─── TRUST & SELLER PROFILE ─────────────────────────────────────
+
+async def get_seller_profile_full(seller_id: str) -> dict:
+    """Aggregates all data to build a high-trust seller profile."""
+    seller = await safe_get(User, seller_id)
+    if not seller:
+        not_found("Seller not found")
+        
+    profile = await FarmProfile.find_one({"farmer_id": seller_id})
+    posts = await Post.find({"author_id": seller_id}).sort("-created_at").to_list()
+    listings = await Product.find({"seller_id": seller_id, "is_active": True}).to_list()
+    
+    # Simple score based on verified posts and profile
+    verified_posts_count = len([p for p in posts if p.is_verified_post])
+    eco_points = (verified_posts_count * 50) + (100 if profile else 0)
+    
+    return {
+        "seller_name": seller.name,
+        "seller_avatar": seller.profile_picture,
+        "joined_at": seller.created_at,
+        "eco_trust_score": eco_points,
+        "profile": profile.dict() if profile else None,
+        "posts": [p.dict() for p in posts],
+        "products": [await _product_to_dict(l) for l in listings],
+        "is_goo_verified": True if verified_posts_count > 5 else False
+    }
+
+
+# ─── HELPER ──────────────────────────────────────────────────
 
 async def _product_to_dict(p: Product) -> dict:
     # Get reviews count and avg rating
@@ -379,16 +513,22 @@ async def _product_to_dict(p: Product) -> dict:
         "proof_images": p.proof_images,
         "is_goo_verified": p.is_goo_verified,
         "is_featured": p.is_featured,
-        "views": p.views_count,
-        "sales": p.sales_count,
+        "is_eco_certified": getattr(p, "is_eco_certified", False),
+        "sales_count": p.sales_count,
+        "views_count": p.views_count,
         "rating": round(avg_r, 1),
-        "review_count": len(reviews),
+        "reviews_count": len(reviews),
+        "growth_stages": getattr(p, "growth_stages", []),
+        "farming_tasks": getattr(p, "farming_tasks", []),
         "created_at": p.created_at.isoformat(),
     }
 
 
 async def _order_to_dict(o: Order) -> dict:
-    product = await Product.get(o.product_id)
+    try:
+        product = await safe_get(Product, o.product_id)
+    except Exception:
+        product = None
     return {
         "id": str(o.id),
         "product_id": o.product_id,

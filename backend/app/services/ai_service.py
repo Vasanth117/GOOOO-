@@ -5,10 +5,19 @@ import logging
 import json
 import base64
 import io
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Any
 from pathlib import Path
+from beanie import PydanticObjectId
 
 logger = logging.getLogger(__name__)
+
+class MongoJSONEncoder(json.JSONEncoder):
+    def default(self, obj: Any) -> Any:
+        if isinstance(obj, PydanticObjectId):
+            return str(obj)
+        if isinstance(obj, bytes):
+            return obj.decode('utf-8', errors='ignore')
+        return super().default(obj)
 
 # Initialize Groq
 if settings.GROQ_API_KEY:
@@ -119,7 +128,7 @@ async def get_farming_advice(user_query: str, context: dict) -> dict:
 
     full_prompt = f"""
     EXPERT CONTEXT:
-    {json.dumps(clean_context)}
+    {json.dumps(clean_context, cls=MongoJSONEncoder)}
 
     FARMER MESSAGE:
     {user_query}
@@ -385,7 +394,7 @@ async def generate_personalized_missions(farm_profile: dict, weather: dict) -> L
         "}]}"
     )
 
-    user_context = f"FARM PROFILE: {json.dumps(farm_profile)}. WEATHER: {json.dumps(weather)}"
+    user_context = f"FARM PROFILE: {json.dumps(farm_profile, cls=MongoJSONEncoder)}. WEATHER: {json.dumps(weather, cls=MongoJSONEncoder)}"
     
     try:
         response = await client.chat.completions.create(

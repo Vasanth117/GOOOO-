@@ -36,6 +36,7 @@ async def connect_db():
     from app.models.review import ProductReview
     from app.models.organic_report import OrganicReport
     from app.models.follow_request import FollowRequest
+    from app.models.cart import Cart
 
     client = AsyncIOMotorClient(settings.MONGODB_URL)
     db = client[settings.DB_NAME]
@@ -71,6 +72,7 @@ async def connect_db():
             ProductReview,
             OrganicReport,
             FollowRequest,
+            Cart,
         ],
     )
     logger.info(f"✅ Connected to MongoDB: {settings.DB_NAME}")

@@ -8,7 +8,7 @@ from datetime import datetime
 class CreateProductRequest(BaseModel):
     name: str = Field(..., min_length=3, max_length=100)
     description: str = Field(..., min_length=10)
-    category: str = Field(..., pattern="^(seeds|fertilizer|tools|consultation|crop|irrigation|other)$")
+    category: str = Field(..., pattern="^(seeds|fertilizers?|tools|consultation|crops?|irrigation|other)$")
     price: float = Field(..., ge=0)
     stock: int = Field(..., ge=0)
     image_url: Optional[str] = None
@@ -17,6 +17,8 @@ class CreateProductRequest(BaseModel):
     is_eco_certified: bool = False
     is_featured: bool = False
     discount_percent: float = 0.0
+    growth_stages: List[dict] = []
+    farming_tasks: List[dict] = []
 
     class Config:
         json_schema_extra = {
@@ -44,6 +46,8 @@ class UpdateProductRequest(BaseModel):
     is_eco_certified: Optional[bool] = None
     is_featured: Optional[bool] = None
     discount_percent: Optional[float] = None
+    growth_stages: Optional[List[dict]] = None
+    farming_tasks: Optional[List[dict]] = None
     is_active: Optional[bool] = None
 
 

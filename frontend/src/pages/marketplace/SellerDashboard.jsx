@@ -6,8 +6,10 @@ import {
     ChevronRight, Clock, CheckCircle, Truck, XCircle,
     ArrowUpRight, ArrowDownRight, MessageSquare, Tag,
     Image as ImageIcon, Award, ShieldCheck, AlertCircle,
-    Loader2, MoreVertical, RefreshCw, ArrowRight
+    Loader2, MoreVertical, RefreshCw, ArrowRight,
+    Share2, Ticket
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { apiService } from '../../services/apiService';
 import { useAuth } from '../../context/AuthContext';
 import ManageProducts from './ManageProducts';
@@ -46,6 +48,7 @@ const StatCard = ({ icon: Icon, label, value, trend, color }) => (
 );
 
 const SellerDashboard = () => {
+    const navigate = useNavigate();
     const { user } = useAuth();
     const [activeTab, setActiveTab] = useState('overview');
     const [stats, setStats] = useState(null);
@@ -60,7 +63,7 @@ const SellerDashboard = () => {
         setLoading(true);
         try {
             const res = await apiService.getSellerDashboard();
-            setStats(res.data);
+            setStats(res);
             setError(null);
         } catch (err) {
             console.error(err);
@@ -124,7 +127,7 @@ const SellerDashboard = () => {
 
             {/* Quick Summary Section */}
             <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '32px', marginBottom: '40px' }}>
-                {/* Earnings Chart Placeholder (We can use a simple SVG or CSS graph if no library) */}
+                {/* Earnings Chart */}
                 <div className="card" style={{ padding: '32px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
                         <h3 style={{ fontSize: '1.25rem', fontWeight: 900 }}>Earnings Analytics</h3>
@@ -147,7 +150,6 @@ const SellerDashboard = () => {
                                         borderRadius: '8px 8px 4px 4px',
                                         transition: '0.3s'
                                     }} />
-                                    {/* Show only some dates to avoid clutter */}
                                     {idx % 5 === 0 && <span style={{ fontSize: '0.65rem', color: '#999', fontWeight: 700 }}>{day.date.split('-')[2]}</span>}
                                 </div>
                             );
@@ -210,41 +212,71 @@ const SellerDashboard = () => {
                     transition={{ duration: 0.2 }}
                 >
                     {activeTab === 'overview' && (
-                        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '32px' }}>
-                            {/* Recent Orders Overview */}
-                            <div className="card" style={{ padding: '0' }}>
-                                <div style={{ padding: '24px', borderBottom: '1px solid #eeedeb', display: 'flex', justifyContent: 'space-between' }}>
-                                    <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 900 }}>Recent Orders</h3>
-                                    <button className="btn-text" onClick={() => setActiveTab('orders')}>View All Orders <ArrowRight size={14} /></button>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '32px' }}>
+                                {/* Recent Orders */}
+                                <div className="card" style={{ padding: '0' }}>
+                                    <div style={{ padding: '24px', borderBottom: '1px solid #eeedeb', display: 'flex', justifyContent: 'space-between' }}>
+                                        <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 900 }}>Recent Orders</h3>
+                                        <button className="btn-text" onClick={() => setActiveTab('orders')}>View All Orders <ArrowRight size={14} /></button>
+                                    </div>
+                                    <div style={{ padding: '24px' }}>
+                                        <ManageOrders orders={stats?.recent_orders || []} onRefresh={fetchDashboard} isCompact />
+                                    </div>
                                 </div>
-                                <div style={{ padding: '24px' }}>
-                                    <ManageOrders orders={stats?.recent_orders || []} onRefresh={fetchDashboard} isCompact />
+
+                                {/* Top Products */}
+                                <div className="card" style={{ padding: '32px' }}>
+                                    <h3 style={{ fontSize: '1.1rem', fontWeight: 900, marginBottom: '24px' }}>Store Performance</h3>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                                        {stats?.top_products?.map(p => (
+                                            <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                                                <div style={{ width: 48, height: 48, borderRadius: 12, background: '#f4f4f2', overflow: 'hidden' }}>
+                                                    <img src={p.image_url || 'https://via.placeholder.com/100'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                </div>
+                                                <div style={{ flex: 1 }}>
+                                                    <div style={{ fontSize: '0.9rem', fontWeight: 800 }}>{p.name}</div>
+                                                    <div style={{ display: 'flex', gap: 12, marginTop: 4 }}>
+                                                        <span style={{ fontSize: '0.72rem', color: '#888', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
+                                                            <Eye size={12} /> {p.views} views
+                                                        </span>
+                                                        <span style={{ fontSize: '0.72rem', color: '#888', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
+                                                            <Tag size={12} /> {p.sales} sales
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <div style={{ fontSize: '1rem', fontWeight: 950, color: '#2d5a27' }}>₹{p.price}</div>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
                             </div>
 
-                            {/* Top Products Analytics */}
-                            <div className="card" style={{ padding: '32px' }}>
-                                <h3 style={{ fontSize: '1.1rem', fontWeight: 900, marginBottom: '24px' }}>Store Performance</h3>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-                                    {stats?.top_products.map(p => (
-                                        <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                                            <div style={{ width: 48, height: 48, borderRadius: 12, background: '#f4f4f2', overflow: 'hidden' }}>
-                                                <img src={p.image_url || 'https://via.placeholder.com/100'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                            </div>
-                                            <div style={{ flex: 1 }}>
-                                                <div style={{ fontSize: '0.9rem', fontWeight: 800 }}>{p.name}</div>
-                                                <div style={{ display: 'flex', gap: 12, marginTop: 4 }}>
-                                                    <span style={{ fontSize: '0.72rem', color: '#888', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
-                                                        <Eye size={12} /> {p.views} views
-                                                    </span>
-                                                    <span style={{ fontSize: '0.72rem', color: '#888', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
-                                                        <Tag size={12} /> {p.sales} sales
-                                                    </span>
-                                                </div>
-                                            </div>
-                                            <div style={{ fontSize: '1rem', fontWeight: 950, color: '#2d5a27' }}>₹{p.price}</div>
-                                        </div>
-                                    ))}
+                            {/* Marketing Toolkit Section */}
+                            <div className="card" style={{ padding: '40px', background: 'linear-gradient(135deg, #f4fdf4 0%, #fff 100%)', border: '1px solid #dcf7dc' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                                    <h3 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 950, color: '#166534' }}>Grow Your Business 🚀</h3>
+                                    <span style={{ fontSize: '0.9rem', fontWeight: 800, color: '#2d5a27' }}>GOO Marketing Suite</span>
+                                </div>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px' }}>
+                                    <div style={{ padding: '25px', background: '#fff', borderRadius: '24px', border: '1px solid #eee' }}>
+                                        <div style={{ color: '#2d5a27', marginBottom: '12px' }}><Share2 size={28} /></div>
+                                        <div style={{ fontWeight: 900, fontSize: '1rem', marginBottom: '8px' }}>Shoutout to Feed</div>
+                                        <p style={{ fontSize: '0.8rem', color: '#666', lineHeight: 1.5 }}>Promote your organic proof to the community social feed.</p>
+                                        <button className="btn-secondary" style={{ width: '100%', marginTop: '20px' }}>Promote Now</button>
+                                    </div>
+                                    <div style={{ padding: '25px', background: '#fff', borderRadius: '24px', border: '1px solid #eee' }}>
+                                        <div style={{ color: '#f59e0b', marginBottom: '12px' }}><Ticket size={28} /></div>
+                                        <div style={{ fontWeight: 900, fontSize: '1rem', marginBottom: '8px' }}>Create Voucher</div>
+                                        <p style={{ fontSize: '0.8rem', color: '#666', lineHeight: 1.5 }}>Lower prices for 24 hours to boost local sales.</p>
+                                        <button className="btn-secondary" style={{ width: '100%', marginTop: '20px' }}>Start Flash Sale</button>
+                                    </div>
+                                    <div style={{ padding: '25px', background: '#fff', borderRadius: '24px', border: '1px solid #eee' }}>
+                                        <div style={{ color: '#3b82f6', marginBottom: '12px' }}><Package size={28} /></div>
+                                        <div style={{ fontWeight: 900, fontSize: '1rem', marginBottom: '8px' }}>Featured Listing</div>
+                                        <p style={{ fontSize: '0.8rem', color: '#666', lineHeight: 1.5 }}>Pin your best crops to the marketplace header.</p>
+                                        <button className="btn-secondary" style={{ width: '100%', marginTop: '20px' }}>Manage Featured</button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -256,6 +288,36 @@ const SellerDashboard = () => {
 
                     {activeTab === 'orders' && (
                         <ManageOrders orders={stats?.recent_orders || []} onRefresh={fetchDashboard} />
+                    )}
+
+                    {activeTab === 'reviews' && (
+                        <div className="card" style={{ padding: '32px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '30px' }}>
+                                <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 950 }}>Customer Feedback 💬</h2>
+                                <div style={{ background: '#fef3c7', color: '#d4af37', padding: '8px 15px', borderRadius: '10px', fontSize: '0.9rem', fontWeight: 900 }}>4.8 ★ Store Average</div>
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                                {[1, 2].map(r => (
+                                    <div key={r} style={{ background: '#f9f9f9', padding: '24px', borderRadius: '16px', border: '1.5px solid #eee' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                                <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#eee' }} />
+                                                <div>
+                                                    <div style={{ fontWeight: 800 }}>{r === 1 ? 'Anish M.' : 'Priya R.'}</div>
+                                                    <div style={{ fontSize: '0.75rem', color: '#888' }}>on "Organic Tomatoes"</div>
+                                                </div>
+                                            </div>
+                                            <div style={{ color: '#d4af37' }}>★★★★★</div>
+                                        </div>
+                                        <p style={{ margin: 0, color: '#444', lineHeight: 1.5, fontSize: '0.95rem' }}>{r === 1 ? 'Quality is exceptional. The GOO verification really helps trust the source.' : 'Best fertilizer I have used in years. Fast shipping!'}</p>
+                                        <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
+                                            <button className="btn-secondary" style={{ padding: '8px 20px', fontSize: '0.85rem' }} onClick={() => navigate('/messages')}>Reply Direct</button>
+                                            <button className="btn-ghost" style={{ fontSize: '0.85rem' }}>Report</button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
                     )}
                 </motion.div>
             </AnimatePresence>

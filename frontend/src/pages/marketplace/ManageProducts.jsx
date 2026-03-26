@@ -4,7 +4,7 @@ import {
     Plus, Search, Filter, MoreVertical, Edit3, Trash2, 
     Eye, Tag, Package, Image as ImageIcon, CheckCircle, 
     XCircle, AlertCircle, ShoppingBag, ShieldCheck, Camera,
-    Save, X, Upload, Info, Loader2, Sparkles, Sprout
+    Save, X, Upload, Info, Loader2, Sparkles, Sprout, TrendingUp
 } from 'lucide-react';
 import { apiService } from '../../services/apiService';
 
@@ -18,7 +18,10 @@ const ManageProducts = ({ products, onRefresh }) => {
     const [formData, setFormData] = useState({
         name: '', description: '', category: 'other', 
         price: '', stock: '', image_url: '', 
-        proof_images: [], discount_percent: 0,
+        proof_images: [], 
+        growth_stages: [{stage: 'Sowing', date: '', proof: ''}],
+        farming_tasks: [{task: 'Fertilization', status: 'pending'}],
+        discount_percent: 0,
         is_featured: false,
         is_eco_certified: false
     });
@@ -81,6 +84,8 @@ const ManageProducts = ({ products, onRefresh }) => {
             category: p.category, price: p.price, 
             stock: p.stock, image_url: p.image_url || '', 
             proof_images: p.proof_images || [], 
+            growth_stages: p.growth_stages || [{stage: 'Sowing', date: '', proof: ''}],
+            farming_tasks: p.farming_tasks || [{task: 'Fertilization', status: 'pending'}],
             discount_percent: p.discount_percent || 0,
             is_featured: p.is_featured || false,
             is_eco_certified: p.is_eco_certified || false
@@ -143,6 +148,21 @@ const ManageProducts = ({ products, onRefresh }) => {
                                 {p.description}
                             </p>
                             
+                            {/* Process Proof Gallery */}
+                            {(p.proof_images?.length > 0 || p.growth_stages?.length > 0) && (
+                                <div style={{ marginBottom: '15px' }}>
+                                    <div style={{ fontSize: '0.65rem', fontWeight: 900, color: '#166534', marginBottom: 6, letterSpacing: '0.05em', textTransform: 'uppercase' }}>Farming Process Proof 🌱</div>
+                                    <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4 }}>
+                                        {p.proof_images?.map((img, idx) => (
+                                            <img key={idx} src={img} style={{ width: 45, height: 45, borderRadius: 8, objectFit: 'cover', border: '1.5px solid #dcf7dc' }} alt="proof" />
+                                        ))}
+                                        {p.growth_stages?.filter(s => s.proof).map((s, idx) => (
+                                            <img key={`gs-${idx}`} src={s.proof} style={{ width: 45, height: 45, borderRadius: 8, objectFit: 'cover', border: '1.5px solid #dcf7dc' }} alt="stage" />
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
                             <div style={{ display: 'flex', gridColumnGap: '20px', gridRowGap: '12px', flexWrap: 'wrap', borderTop: '1px solid #f8f8f8', paddingTop: '16px' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.75rem', fontWeight: 800, color: '#888' }}>
                                     <Package size={14} /> {p.stock} in stock
@@ -203,7 +223,7 @@ const ManageProducts = ({ products, onRefresh }) => {
                                                 <option value="seeds">Seeds</option>
                                                 <option value="fertilizer">Fertilizer</option>
                                                 <option value="tools">Tools</option>
-                                                <option value="crop">Crops / Produce</option>
+                                                <option value="crops">Crops / Produce</option>
                                                 <option value="irrigation">Irrigation</option>
                                                 <option value="consultation">Consultation</option>
                                                 <option value="other">Other</option>
@@ -276,6 +296,24 @@ const ManageProducts = ({ products, onRefresh }) => {
                                             <p style={{ fontSize: '0.75rem', color: '#166534', fontWeight: 700, marginBottom: 12, lineHeight: 1.5 }}>
                                                 Upload photos of your farming process, growth stages, or organic certifications to build trust.
                                             </p>
+                                            
+                                            <div style={{marginBottom: '15px'}}>
+                                                <label style={{fontSize: '0.7rem', fontWeight: 900, color: '#166534', display: 'block', marginBottom: '5px'}}>Growth Stage Documentation 🌱</label>
+                                                {formData.growth_stages?.map((st, i) => (
+                                                    <div key={i} style={{display: 'flex', gap: '8px', marginBottom: '8px'}}>
+                                                        <select className="form-input" style={{flex: 1, padding: '5px'}} value={st.stage} onChange={e => {
+                                                            const n = [...formData.growth_stages]; n[i].stage = e.target.value; setFormData({...formData, growth_stages: n});
+                                                        }}>
+                                                            <option>Sowing</option><option>Vegetative</option><option>Flowering</option><option>Harvest</option>
+                                                        </select>
+                                                        <input type="date" className="form-input" style={{flex: 1, padding: '5px'}} value={st.date} onChange={e => {
+                                                            const n = [...formData.growth_stages]; n[i].date = e.target.value; setFormData({...formData, growth_stages: n});
+                                                        }} />
+                                                    </div>
+                                                ))}
+                                                <button type="button" onClick={() => setFormData({...formData, growth_stages: [...formData.growth_stages, {stage: 'Sowing', date: '', proof: ''}]})} style={{background: 'none', border: 'none', color: '#2d5a27', fontSize: '0.7rem', fontWeight: 800}}>+ Add Stage</button>
+                                            </div>
+
                                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                                                 {formData.proof_images.map((img, i) => (
                                                     <div key={i} style={{ width: 60, height: 60, borderRadius: 10, overflow: 'hidden', position: 'relative' }}>

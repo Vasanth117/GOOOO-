@@ -37,6 +37,7 @@ class FarmingPractice(str, Enum):
     INTEGRATED = "integrated"
     PERMACULTURE = "permaculture"
     REGENERATIVE = "regenerative"
+    BIODYNAMIC = "biodynamic"
 
 
 from pydantic import BaseModel

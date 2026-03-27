@@ -352,16 +352,40 @@ const AIPage = () => {
                                     {/* Precautions */}
                                     {analysis.precautions?.length > 0 && (
                                         <div className="advice-section" style={{ marginBottom: '10px' }}>
-                                            <p><strong>🌿 Organic Treatment:</strong></p>
-                                            <ul>{analysis.precautions.map((p, i) => <li key={i}>{p}</li>)}</ul>
+                                            <p><strong>🌿 Organic Treatment Steps:</strong></p>
+                                            <ul>
+                                                {analysis.precautions.map((p, i) => (
+                                                    <li key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginBottom: '8px', paddingLeft: 0 }}>
+                                                        <span style={{
+                                                            minWidth: '22px', height: '22px', borderRadius: '50%',
+                                                            background: 'linear-gradient(135deg, #2d5a27, #4ade80)',
+                                                            color: '#fff', fontSize: '0.65rem', fontWeight: 900,
+                                                            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: '1px'
+                                                        }}>{i + 1}</span>
+                                                        <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#3a3d38', lineHeight: 1.5 }}>{p}</span>
+                                                    </li>
+                                                ))}
+                                            </ul>
                                         </div>
                                     )}
 
                                     {/* Safety */}
                                     {analysis.safety_measures?.length > 0 && (
                                         <div className="advice-section highlight">
-                                            <p><strong>⚠️ Farmer Safety:</strong></p>
-                                            <ul>{analysis.safety_measures.map((s, i) => <li key={i}>{s}</li>)}</ul>
+                                            <p><strong>⚠️ Farmer Safety Measures:</strong></p>
+                                            <ul>
+                                                {analysis.safety_measures.map((s, i) => (
+                                                    <li key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginBottom: '8px', paddingLeft: 0 }}>
+                                                        <span style={{
+                                                            minWidth: '22px', height: '22px', borderRadius: '50%',
+                                                            background: 'linear-gradient(135deg, #f97316, #fbbf24)',
+                                                            color: '#fff', fontSize: '0.65rem', fontWeight: 900,
+                                                            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: '1px'
+                                                        }}>{i + 1}</span>
+                                                        <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#3a3d38', lineHeight: 1.5 }}>{s}</span>
+                                                    </li>
+                                                ))}
+                                            </ul>
                                         </div>
                                     )}
                                 </>

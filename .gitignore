@@ -153,3 +153,10 @@ cython_debug/
 # Backend specific
 backend/uploads/
 backend/__pycache__/
+
+# Frontend
+frontend/node_modules/
+frontend/.env
+
+# Backend env
+backend/.env

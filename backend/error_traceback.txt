@@ -15794,3 +15794,274 @@ farming_practices
   Input should be 'organic', 'conventional', 'mixed', 'sustainable' or 'integrated' [type=enum, input_value='permaculture', input_type=str]
     For further information visit https://errors.pydantic.dev/2.12/v/enum
 
+
+================================================================================
+ERROR ON http://localhost:8000/api/v1/farm/update
+Traceback (most recent call last):
+  File "C:\Users\Valarmathi\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "C:\Users\Valarmathi\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\cors.py", line 91, in __call__
+    await self.simple_response(scope, receive, send, request_headers=headers)
+  File "C:\Users\Valarmathi\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\cors.py", line 146, in simple_response
+    await self.app(scope, receive, send)
+  File "C:\Users\Valarmathi\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\exceptions.py", line 62, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "C:\Users\Valarmathi\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\_exception_handler.py", line 64, in wrapped_app
+    raise exc
+  File "C:\Users\Valarmathi\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\Valarmathi\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\routing.py", line 762, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Users\Valarmathi\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\routing.py", line 782, in app
+    await route.handle(scope, receive, send)
+  File "C:\Users\Valarmathi\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\routing.py", line 297, in handle
+    await self.app(scope, receive, send)
+  File "C:\Users\Valarmathi\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\routing.py", line 77, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "C:\Users\Valarmathi\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\_exception_handler.py", line 64, in wrapped_app
+    raise exc
+  File "C:\Users\Valarmathi\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\Valarmathi\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\routing.py", line 72, in app
+    response = await func(request)
+               ^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Valarmathi\AppData\Local\Programs\Python\Python311\Lib\site-packages\fastapi\routing.py", line 299, in app
+    raise e
+  File "C:\Users\Valarmathi\AppData\Local\Programs\Python\Python311\Lib\site-packages\fastapi\routing.py", line 294, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Valarmathi\AppData\Local\Programs\Python\Python311\Lib\site-packages\fastapi\routing.py", line 191, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\goo\GOO-Project-\backend\app\routes\farm_routes.py", line 88, in update_farm
+    result = await farm_controller.update_farm(current_user, data)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\goo\GOO-Project-\backend\app\controllers\farm_controller.py", line 133, in update_farm
+    await farm.save()
+  File "C:\Users\Valarmathi\AppData\Local\Programs\Python\Python311\Lib\site-packages\beanie\odm\actions.py", line 237, in wrapper
+    result = await f(
+             ^^^^^^^^
+  File "C:\Users\Valarmathi\AppData\Local\Programs\Python\Python311\Lib\site-packages\beanie\odm\utils\state.py", line 89, in wrapper
+    result = await f(self, *args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Valarmathi\AppData\Local\Programs\Python\Python311\Lib\site-packages\beanie\odm\utils\self_validation.py", line 19, in wrapper
+    return await f(self, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Valarmathi\AppData\Local\Programs\Python\Python311\Lib\site-packages\beanie\odm\documents.py", line 616, in save
+    return await self.update(
+           ^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Valarmathi\AppData\Local\Programs\Python\Python311\Lib\site-packages\beanie\odm\actions.py", line 237, in wrapper
+    result = await f(
+             ^^^^^^^^
+  File "C:\Users\Valarmathi\AppData\Local\Programs\Python\Python311\Lib\site-packages\beanie\odm\utils\state.py", line 89, in wrapper
+    result = await f(self, *args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Valarmathi\AppData\Local\Programs\Python\Python311\Lib\site-packages\beanie\odm\documents.py", line 733, in update
+    result = await self.find_one(find_query).update(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Valarmathi\AppData\Local\Programs\Python\Python311\Lib\site-packages\beanie\odm\queries\update.py", line 346, in __await__
+    update_result = yield from self._update().__await__()
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Valarmathi\AppData\Local\Programs\Python\Python311\Lib\site-packages\beanie\odm\queries\update.py", line 327, in _update
+    result = parse_obj(self.document_model, result)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Valarmathi\AppData\Local\Programs\Python\Python311\Lib\site-packages\beanie\odm\utils\parsing.py", line 146, in parse_obj
+    result = parse_model(model, data)
+             ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Valarmathi\AppData\Local\Programs\Python\Python311\Lib\site-packages\beanie\odm\utils\pydantic.py", line 42, in parse_model
+    return model_type.model_validate(data)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Valarmathi\AppData\Local\Programs\Python\Python311\Lib\site-packages\pydantic\main.py", line 716, in model_validate
+    return cls.__pydantic_validator__.validate_python(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+pydantic_core._pydantic_core.ValidationError: 1 validation error for FarmProfile
+farming_practices
+  Input should be 'organic', 'conventional', 'mixed', 'sustainable', 'integrated', 'permaculture' or 'regenerative' [type=enum, input_value='biodynamic', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.12/v/enum
+
+
+================================================================================
+ERROR ON http://localhost:8000/api/v1/farm/update
+Traceback (most recent call last):
+  File "C:\Users\Valarmathi\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "C:\Users\Valarmathi\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\cors.py", line 91, in __call__
+    await self.simple_response(scope, receive, send, request_headers=headers)
+  File "C:\Users\Valarmathi\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\cors.py", line 146, in simple_response
+    await self.app(scope, receive, send)
+  File "C:\Users\Valarmathi\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\exceptions.py", line 62, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "C:\Users\Valarmathi\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\_exception_handler.py", line 64, in wrapped_app
+    raise exc
+  File "C:\Users\Valarmathi\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\Valarmathi\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\routing.py", line 762, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Users\Valarmathi\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\routing.py", line 782, in app
+    await route.handle(scope, receive, send)
+  File "C:\Users\Valarmathi\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\routing.py", line 297, in handle
+    await self.app(scope, receive, send)
+  File "C:\Users\Valarmathi\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\routing.py", line 77, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "C:\Users\Valarmathi\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\_exception_handler.py", line 64, in wrapped_app
+    raise exc
+  File "C:\Users\Valarmathi\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\Valarmathi\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\routing.py", line 72, in app
+    response = await func(request)
+               ^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Valarmathi\AppData\Local\Programs\Python\Python311\Lib\site-packages\fastapi\routing.py", line 299, in app
+    raise e
+  File "C:\Users\Valarmathi\AppData\Local\Programs\Python\Python311\Lib\site-packages\fastapi\routing.py", line 294, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Valarmathi\AppData\Local\Programs\Python\Python311\Lib\site-packages\fastapi\routing.py", line 191, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\goo\GOO-Project-\backend\app\routes\farm_routes.py", line 88, in update_farm
+    result = await farm_controller.update_farm(current_user, data)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\goo\GOO-Project-\backend\app\controllers\farm_controller.py", line 77, in update_farm
+    farm = await FarmProfile.find_one(FarmProfile.farmer_id == str(user.id))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Valarmathi\AppData\Local\Programs\Python\Python311\Lib\site-packages\beanie\odm\queries\find.py", line 1036, in __await__
+    FindQueryResultType, parse_obj(self.projection_model, document)
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Valarmathi\AppData\Local\Programs\Python\Python311\Lib\site-packages\beanie\odm\utils\parsing.py", line 146, in parse_obj
+    result = parse_model(model, data)
+             ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Valarmathi\AppData\Local\Programs\Python\Python311\Lib\site-packages\beanie\odm\utils\pydantic.py", line 42, in parse_model
+    return model_type.model_validate(data)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Valarmathi\AppData\Local\Programs\Python\Python311\Lib\site-packages\pydantic\main.py", line 716, in model_validate
+    return cls.__pydantic_validator__.validate_python(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+pydantic_core._pydantic_core.ValidationError: 1 validation error for FarmProfile
+farming_practices
+  Input should be 'organic', 'conventional', 'mixed', 'sustainable', 'integrated', 'permaculture' or 'regenerative' [type=enum, input_value='biodynamic', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.12/v/enum
+
+
+================================================================================
+ERROR ON http://localhost:8000/api/v1/farm/update
+Traceback (most recent call last):
+  File "C:\Users\Valarmathi\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "C:\Users\Valarmathi\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\cors.py", line 91, in __call__
+    await self.simple_response(scope, receive, send, request_headers=headers)
+  File "C:\Users\Valarmathi\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\cors.py", line 146, in simple_response
+    await self.app(scope, receive, send)
+  File "C:\Users\Valarmathi\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\exceptions.py", line 62, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "C:\Users\Valarmathi\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\_exception_handler.py", line 64, in wrapped_app
+    raise exc
+  File "C:\Users\Valarmathi\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\Valarmathi\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\routing.py", line 762, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Users\Valarmathi\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\routing.py", line 782, in app
+    await route.handle(scope, receive, send)
+  File "C:\Users\Valarmathi\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\routing.py", line 297, in handle
+    await self.app(scope, receive, send)
+  File "C:\Users\Valarmathi\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\routing.py", line 77, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "C:\Users\Valarmathi\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\_exception_handler.py", line 64, in wrapped_app
+    raise exc
+  File "C:\Users\Valarmathi\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\Valarmathi\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\routing.py", line 72, in app
+    response = await func(request)
+               ^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Valarmathi\AppData\Local\Programs\Python\Python311\Lib\site-packages\fastapi\routing.py", line 299, in app
+    raise e
+  File "C:\Users\Valarmathi\AppData\Local\Programs\Python\Python311\Lib\site-packages\fastapi\routing.py", line 294, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Valarmathi\AppData\Local\Programs\Python\Python311\Lib\site-packages\fastapi\routing.py", line 191, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\goo\GOO-Project-\backend\app\routes\farm_routes.py", line 88, in update_farm
+    result = await farm_controller.update_farm(current_user, data)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\goo\GOO-Project-\backend\app\controllers\farm_controller.py", line 77, in update_farm
+    farm = await FarmProfile.find_one(FarmProfile.farmer_id == str(user.id))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Valarmathi\AppData\Local\Programs\Python\Python311\Lib\site-packages\beanie\odm\queries\find.py", line 1036, in __await__
+    FindQueryResultType, parse_obj(self.projection_model, document)
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Valarmathi\AppData\Local\Programs\Python\Python311\Lib\site-packages\beanie\odm\utils\parsing.py", line 146, in parse_obj
+    result = parse_model(model, data)
+             ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Valarmathi\AppData\Local\Programs\Python\Python311\Lib\site-packages\beanie\odm\utils\pydantic.py", line 42, in parse_model
+    return model_type.model_validate(data)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Valarmathi\AppData\Local\Programs\Python\Python311\Lib\site-packages\pydantic\main.py", line 716, in model_validate
+    return cls.__pydantic_validator__.validate_python(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+pydantic_core._pydantic_core.ValidationError: 1 validation error for FarmProfile
+farming_practices
+  Input should be 'organic', 'conventional', 'mixed', 'sustainable', 'integrated', 'permaculture' or 'regenerative' [type=enum, input_value='biodynamic', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.12/v/enum
+
+
+================================================================================
+ERROR ON http://localhost:8000/api/v1/farm/update
+Traceback (most recent call last):
+  File "C:\Users\Valarmathi\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "C:\Users\Valarmathi\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\cors.py", line 91, in __call__
+    await self.simple_response(scope, receive, send, request_headers=headers)
+  File "C:\Users\Valarmathi\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\cors.py", line 146, in simple_response
+    await self.app(scope, receive, send)
+  File "C:\Users\Valarmathi\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\exceptions.py", line 62, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "C:\Users\Valarmathi\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\_exception_handler.py", line 64, in wrapped_app
+    raise exc
+  File "C:\Users\Valarmathi\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\Valarmathi\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\routing.py", line 762, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Users\Valarmathi\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\routing.py", line 782, in app
+    await route.handle(scope, receive, send)
+  File "C:\Users\Valarmathi\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\routing.py", line 297, in handle
+    await self.app(scope, receive, send)
+  File "C:\Users\Valarmathi\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\routing.py", line 77, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "C:\Users\Valarmathi\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\_exception_handler.py", line 64, in wrapped_app
+    raise exc
+  File "C:\Users\Valarmathi\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\Valarmathi\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\routing.py", line 72, in app
+    response = await func(request)
+               ^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Valarmathi\AppData\Local\Programs\Python\Python311\Lib\site-packages\fastapi\routing.py", line 299, in app
+    raise e
+  File "C:\Users\Valarmathi\AppData\Local\Programs\Python\Python311\Lib\site-packages\fastapi\routing.py", line 294, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Valarmathi\AppData\Local\Programs\Python\Python311\Lib\site-packages\fastapi\routing.py", line 191, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\goo\GOO-Project-\backend\app\routes\farm_routes.py", line 88, in update_farm
+    result = await farm_controller.update_farm(current_user, data)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\goo\GOO-Project-\backend\app\controllers\farm_controller.py", line 77, in update_farm
+    farm = await FarmProfile.find_one(FarmProfile.farmer_id == str(user.id))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Valarmathi\AppData\Local\Programs\Python\Python311\Lib\site-packages\beanie\odm\queries\find.py", line 1036, in __await__
+    FindQueryResultType, parse_obj(self.projection_model, document)
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Valarmathi\AppData\Local\Programs\Python\Python311\Lib\site-packages\beanie\odm\utils\parsing.py", line 146, in parse_obj
+    result = parse_model(model, data)
+             ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Valarmathi\AppData\Local\Programs\Python\Python311\Lib\site-packages\beanie\odm\utils\pydantic.py", line 42, in parse_model
+    return model_type.model_validate(data)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Valarmathi\AppData\Local\Programs\Python\Python311\Lib\site-packages\pydantic\main.py", line 716, in model_validate
+    return cls.__pydantic_validator__.validate_python(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+pydantic_core._pydantic_core.ValidationError: 1 validation error for FarmProfile
+farming_practices
+  Input should be 'organic', 'conventional', 'mixed', 'sustainable', 'integrated', 'permaculture' or 'regenerative' [type=enum, input_value='biodynamic', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.12/v/enum
+

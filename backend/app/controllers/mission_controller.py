@@ -228,7 +228,7 @@ async def auto_assign_ai_missions(user: User) -> dict:
             mp = MissionProgress(farmer_id=str(user.id), mission_id=m_id, expires_at=datetime.utcnow() + timedelta(days=30))
             await mp.insert()
 
-    # ─── 2. ASSIGN PERSONALIZED AI TASKS IF NOT ENOUGH ACTIVE
+    # ─── 2. CHECK PERSONALIZED AI TASKS ALREADY ACTIVE
     progress_items = await MissionProgress.find(
         MissionProgress.farmer_id == str(user.id),
         {"status": {"$in": [MissionStatus.ACTIVE, MissionStatus.IN_PROGRESS, MissionStatus.PENDING_REVIEW]}}
@@ -240,7 +240,7 @@ async def auto_assign_ai_missions(user: User) -> dict:
         if m and m.mission_type != MissionType.COMMUNITY:
             personal_active += 1
             
-    if personal_active >= 3:
+    if personal_active >= 5:
         return await get_active_missions(user)
 
     # ─── 3. ASSIGN PERSONALIZED AI TASKS ────────────────────────────
@@ -257,7 +257,8 @@ async def auto_assign_ai_missions(user: User) -> dict:
             farm_data = {"crops": getattr(farm, 'crop_types', 'unknown'), "soil": getattr(farm, 'soil_type', 'unknown'), "score": getattr(farm, 'sustainability_score', 0)}
             custom = await ai_service.generate_personalized_missions(farm_data, weather)
             if custom: ai_missions = custom
-        except: pass
+        except Exception as e:
+            logger.error(f"AI mission generation failed: {e}", exc_info=True)
 
     for am in ai_missions:
         m_type = str(am.get("type", "daily")).lower()

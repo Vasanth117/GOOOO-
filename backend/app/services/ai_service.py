@@ -231,7 +231,7 @@ async def analyze_crop_health(image_data: bytes, user_query: Optional[str] = Non
 
 A YOLOv8 AI model scanned a plant image and detected: "{yolo_diagnosis}" with {yolo_confidence:.1%} confidence.
 
-{"The plant appears HEALTHY. Provide encouraging tips to keep it thriving." if is_healthy else "The plant has a DISEASE. Provide specific organic treatment steps and safety precautions."}
+{"The plant appears HEALTHY. Provide encouraging tips to keep it thriving organically." if is_healthy else "The plant has a DISEASE. Provide specific, detailed organic treatment steps and safety precautions."}
 
 Farmer note: {user_query or "No additional info provided."}
 
@@ -239,9 +239,22 @@ Respond ONLY with this exact JSON:
 {{
     "diagnosis": "{yolo_diagnosis}",
     "severity": "Low/Medium/High",
-    "advice": "A comprehensive paragraph explaining what this disease is, how it spreads, and the best organic treatment approach.",
-    "precautions": ["Step 1 with specific organic product or technique", "Step 2", "Step 3", "Step 4"],
-    "safety_measures": ["Personal safety measure 1 for the farmer", "Safety measure 2", "Safety measure 3"],
+    "advice": "A comprehensive 3-4 sentence paragraph explaining what this disease is, how it spreads, what damage it causes, and the best organic treatment approach.",
+    "precautions": [
+        "Step 1: Specific organic product or technique with exact dosage/method",
+        "Step 2: Second treatment step",
+        "Step 3: Third treatment step",
+        "Step 4: Fourth preventive measure",
+        "Step 5: Long-term organic management tip",
+        "Step 6: Soil or environmental improvement tip"
+    ],
+    "safety_measures": [
+        "Personal safety measure 1 for the farmer with specific detail",
+        "Safety measure 2",
+        "Safety measure 3",
+        "Safety measure 4",
+        "Post-treatment hygiene step"
+    ],
     "is_organic_friendly": true
 }}"""
 
@@ -265,9 +278,22 @@ Respond ONLY with this exact JSON:
         return {
             "diagnosis": yolo_diagnosis,
             "severity": "Medium",
-            "advice": f"YOLOv8 detected: {yolo_diagnosis}. Please consult your local agricultural officer for a complete treatment plan.",
-            "precautions": ["Isolate affected plants immediately", "Remove and destroy affected leaves", "Avoid overhead watering", "Apply Neem oil spray as organic treatment"],
-            "safety_measures": ["Wear gloves when handling affected plants", "Wash hands thoroughly after contact", "Do not consume affected produce without expert advice"],
+            "advice": f"YOLOv8 detected: {yolo_diagnosis}. The plant shows signs that require immediate attention. Apply organic treatment methods and monitor closely over the next 48 hours.",
+            "precautions": [
+                "Isolate affected plants immediately to prevent spread",
+                "Remove and destroy all visibly infected leaves",
+                "Avoid overhead watering — use drip irrigation instead",
+                "Apply Neem oil spray (5ml per litre) every 3 days",
+                "Dust affected areas with wood ash to reduce fungal spread",
+                "Improve air circulation by pruning dense foliage"
+            ],
+            "safety_measures": [
+                "Wear gloves and a mask when handling affected plants",
+                "Wash hands thoroughly with soap after contact",
+                "Disinfect all tools used with 70% alcohol solution",
+                "Do not consume affected produce without expert clearance",
+                "Keep children and animals away from treated areas for 24 hours"
+            ],
             "is_organic_friendly": True,
             "confidence": round(yolo_confidence * 100, 1),
             "is_valid_plant": True
@@ -491,9 +517,20 @@ def _mock_vision_analysis():
     return {
         "diagnosis": "General Health Check",
         "severity": "Low",
-        "advice": "The crops look healthy. Continue regular organic watering.",
-        "precautions": ["Avoid overwatering"],
-        "safety_measures": ["Wear gloves when weeding"],
+        "advice": "The crops appear healthy. Maintain your current organic routine and monitor for early signs of stress such as yellowing leaves, wilting, or unusual spots.",
+        "precautions": [
+            "Avoid overwatering — check soil moisture before each irrigation",
+            "Apply compost or vermicompost every 2 weeks for nutrient balance",
+            "Inspect the underside of leaves weekly for early pest detection",
+            "Rotate crops each season to prevent soil-borne disease buildup",
+            "Use mulching to retain moisture and suppress weeds naturally"
+        ],
+        "safety_measures": [
+            "Wear gloves when weeding or handling soil",
+            "Wash all produce thoroughly before consumption",
+            "Avoid working in the field during peak heat hours (11am–3pm)",
+            "Store organic sprays in cool, labelled containers away from children"
+        ],
         "is_organic_friendly": True,
         "confidence": 0,
         "is_valid_plant": True

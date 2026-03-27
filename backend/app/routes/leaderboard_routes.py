@@ -10,6 +10,12 @@ router = APIRouter(prefix="/leaderboard", tags=["Leaderboard"])
 VALID_TYPES = ["national", "local", "district", "streaks", "mission_champions", "water_savers"]
 
 
+@router.get("/me/rank", summary="Get my rank across all leaderboards")
+async def get_my_rank(current_user: User = Depends(require_farmer)):
+    result = await leaderboard_controller.get_my_rank(current_user)
+    return success_response(jsonable_encoder(result))
+
+
 @router.get("/{board_type}", summary="Get leaderboard by type")
 async def get_leaderboard(
     board_type: str,
@@ -27,10 +33,4 @@ async def get_leaderboard(
         limit=limit,
         current_user=current_user,
     )
-    return success_response(jsonable_encoder(result))
-
-
-@router.get("/me/rank", summary="Get my rank across all leaderboards")
-async def get_my_rank(current_user: User = Depends(require_farmer)):
-    result = await leaderboard_controller.get_my_rank(current_user)
     return success_response(jsonable_encoder(result))

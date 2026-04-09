@@ -18,6 +18,8 @@ class SoilType(str, Enum):
     SILT = "silt"
     PEAT = "peat"
     CHALK = "chalk"
+    CHALKY = "chalky"
+    BLACK_COTTON = "black cotton"
 
 
 class IrrigationType(str, Enum):
@@ -27,6 +29,8 @@ class IrrigationType(str, Enum):
     RAIN_FED = "rain_fed"
     RAINFED = "rainfed"
     MANUAL = "manual"
+    CANAL = "canal"
+    GROUNDWATER = "groundwater"
 
 
 class FarmingPractice(str, Enum):

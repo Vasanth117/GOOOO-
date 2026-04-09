@@ -46,6 +46,13 @@ async def create_farm(user: User, data: CreateFarmRequest) -> dict:
     # Check for any initial badges
     await check_and_award_badges(str(user.id))
 
+    try:
+        import asyncio
+        from app.controllers.mission_controller import auto_assign_ai_missions
+        asyncio.create_task(auto_assign_ai_missions(user))
+    except Exception as e:
+        logger.error(f"Failed to auto-assign AI missions: {e}")
+
     logger.info(f"Farm created for user {user.id}: {data.farm_name}")
     return _farm_to_dict(farm)
 
@@ -95,6 +102,14 @@ async def update_farm(user: User, data: UpdateFarmRequest) -> dict:
         )
         await farm.insert()
         await check_and_award_badges(str(user.id))
+        
+        try:
+            import asyncio
+            from app.controllers.mission_controller import auto_assign_ai_missions
+            asyncio.create_task(auto_assign_ai_missions(user))
+        except Exception as e:
+            logger.error(f"Failed to auto-assign AI missions: {e}")
+            
         return _farm_to_dict(farm)
 
     # ── UPDATE existing farm profile ──
@@ -133,6 +148,14 @@ async def update_farm(user: User, data: UpdateFarmRequest) -> dict:
     await farm.save()
 
     await check_and_award_badges(str(user.id))
+    
+    try:
+        import asyncio
+        from app.controllers.mission_controller import auto_assign_ai_missions
+        asyncio.create_task(auto_assign_ai_missions(user))
+    except Exception as e:
+        logger.error(f"Failed to auto-assign AI missions: {e}")
+        
     return _farm_to_dict(farm)
 
 
@@ -232,7 +255,9 @@ async def update_live_location(user: User, lat: float, lng: float) -> dict:
     farm = await FarmProfile.find_one(FarmProfile.farmer_id == str(user.id))
     if not farm:
         return {"error": "Farm profile not found"}
-    farm.set({"live_lat": lat, "live_lng": lng, "last_seen_at": datetime.utcnow()})
+    farm.live_lat = lat
+    farm.live_lng = lng
+    farm.last_seen_at = datetime.utcnow()
     await farm.save()
     return {"live_lat": lat, "live_lng": lng}
 
@@ -245,7 +270,7 @@ async def set_privacy_mode(user: User, mode: str) -> dict:
     farm = await FarmProfile.find_one(FarmProfile.farmer_id == str(user.id))
     if not farm:
         return {"error": "Farm profile not found"}
-    farm.set({"privacy_mode": mode})
+    farm.privacy_mode = mode
     await farm.save()
     return {"privacy_mode": mode}
 

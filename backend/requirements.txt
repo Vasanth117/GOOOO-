@@ -16,3 +16,5 @@ Pillow==11.2.1
 google-generativeai==0.8.6
 groq==0.17.0
 bcrypt==4.2.1
+gunicorn==21.2.0
+pymongo>=4.9.0

@@ -87,8 +87,8 @@ app = FastAPI(
 
 
 # ─── CORS ─────────────────────────────────────────────────────
-# Always allow local dev origins explicitly
-ALLOWED_ORIGINS = [
+# Combine settings origins with standard local dev origins
+ALLOWED_ORIGINS = settings.allowed_origins_list + [
     "http://localhost:3000",
     "http://localhost:5173",
     "http://127.0.0.1:3000",

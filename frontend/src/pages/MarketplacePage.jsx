@@ -11,7 +11,7 @@ import {
     ThumbsUp, Share2, Award, Clock, ClipboardList,
     PieChart, Activity, AlertCircle, HardDrive, Gift,
     Leaf as SproutIcon, Wind, Droplets, Loader2,
-    Mail, Lock
+    Mail, Lock, Globe
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { apiService } from '../services/apiService';
@@ -333,11 +333,18 @@ const MarketplacePage = () => {
 
             {/* ── SHARED NAVIGATION ── */}
             <header className="market-nav-premium">
-                <div className="nav-sect-left">
-                    <button className="btn-exit-p" onClick={() => setPhase('gate')} title="Switch View"><ArrowLeft size={18} /></button>
-                    <div className="market-logo-brand">
-                        <Leaf size={28} color="#2d5a27" />
-                        <div><strong>GOO MARKET</strong><span>{phase.toUpperCase()} PORTAL</span></div>
+                <div className="nav-sect-left" style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                    <button className="btn-exit-p" onClick={() => setPhase('gate')} title="Switch View" style={{ background: '#f4f4f2', border: 'none', width: '40px', height: '40px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#4a4d48' }}>
+                        <ArrowLeft size={18} />
+                    </button>
+                    <div className="market-logo-brand" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <Leaf size={32} color="#2d5a27" />
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                            <strong style={{ fontSize: '1.4rem', fontWeight: 900, lineHeight: 1 }}>GOO MARKET</strong>
+                            <span style={{ fontSize: '0.65rem', fontWeight: 800, color: '#2d5a27', background: '#f0fdf4', padding: '2px 8px', borderRadius: '4px', width: 'fit-content', marginTop: '2px' }}>
+                                {phase.toUpperCase()} PORTAL
+                            </span>
+                        </div>
                     </div>
                 </div>
 
@@ -466,17 +473,26 @@ const MarketplacePage = () => {
 
                             <div className="shop-main-view">
                                 <div className="market-hero-luxe">
-                                    <motion.h1 initial={{ x: -20 }} animate={{ x: 0 }}>Green Trade Marketplace 🌍</motion.h1>
-                                    <p>Support local sustainable farming. Get verified organic products delivered to your door with full traceability.</p>
-                                    <div className="hero-stats-row">
-                                        <div className="hero-stat-item">
-                                            <strong>2.4k+</strong>
-                                            <span>Certified Farmers</span>
+                                    <div className="hero-content-glass">
+                                        <div className="hero-badge-p"><Globe size={14} /> GLOBAL TRADE ENABLED</div>
+                                        <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+                                            Green Trade <span className="text-highlight-p">Marketplace</span>
+                                        </motion.h1>
+                                        <p>Empowering sustainable farming through direct, transparent trade. Access certified organic produce and premium tools with full traceability.</p>
+                                        <div className="hero-stats-row">
+                                            <div className="hero-stat-item">
+                                                <strong>2.4k+</strong>
+                                                <span>Verified Farmers</span>
+                                            </div>
+                                            <div className="hero-stat-item">
+                                                <div className="divider-p" />
+                                                <strong>100%</strong>
+                                                <span>Traceable Yield</span>
+                                            </div>
                                         </div>
-                                        <div className="hero-stat-item">
-                                            <strong>100%</strong>
-                                            <span>Organic Yield</span>
-                                        </div>
+                                    </div>
+                                    <div className="hero-visual-element">
+                                        <Globe size={240} strokeWidth={0.5} className="bg-globe-icon" />
                                     </div>
                                 </div>
 
@@ -1311,29 +1327,121 @@ const marketplaceStyles = `
 .luxe-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 24px; height: 24px; background: #2d5a27; border: 4px solid #fff; border-radius: 50%; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
 
 .market-hero-luxe { 
-  background: linear-gradient(135deg, #1e3d1a 0%, #2d5a27 50%, #3a7a33 100%) !important; 
-  border-radius: 48px !important; padding: 70px 100px !important; color: #fff !important; 
-  margin-bottom: 60px !important; position: relative; overflow: hidden;
-  box-shadow: 0 40px 80px rgba(45, 90, 39, 0.15);
+  background: #1a1c19 !important;
+  background-image: radial-gradient(circle at 100% 0%, #2d5a27 0%, transparent 50%),
+                    radial-gradient(circle at 0% 100%, #1e3d1a 0%, transparent 50%) !important;
+  border-radius: 32px !important; 
+  padding: 80px !important; 
+  color: #fff !important; 
+  margin-bottom: 40px !important; 
+  position: relative; 
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border: 1px solid rgba(255,255,255,0.05);
+  box-shadow: 0 40px 100px rgba(0,0,0,0.15);
 }
-.market-hero-luxe::after {
-  content: ''; position: absolute; inset: 0; 
-  background: url('https://www.transparenttextures.com/patterns/carbon-fibre.png'); 
-  opacity: 0.05; pointer-events: none;
+
+.hero-content-glass {
+  position: relative;
+  z-index: 2;
+  max-width: 600px;
 }
+
+.hero-badge-p {
+  background: rgba(45, 90, 39, 0.3);
+  color: #4ade80;
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 0.7rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  width: fit-content;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid rgba(74, 222, 128, 0.2);
+}
+
 .market-hero-luxe h1 { 
-  font-family: 'Outfit', sans-serif !important; font-size: 4.5rem !important; 
-  font-weight: 950 !important; letter-spacing: -3px !important; margin-bottom: 20px !important; 
-  line-height: 0.9;
+  font-family: 'Outfit', sans-serif !important; 
+  font-size: 4rem !important; 
+  font-weight: 1000 !important; 
+  letter-spacing: -2px !important; 
+  margin: 0 0 20px 0 !important; 
+  line-height: 1.1 !important;
 }
+
+.text-highlight-p {
+  background: linear-gradient(135deg, #4ade80, #22c55e);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
 .market-hero-luxe p { 
-  font-size: 1.2rem !important; opacity: 0.9 !important; max-width: 650px !important; 
-  line-height: 1.7 !important; font-weight: 400; font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 1.15rem !important; 
+  color: #b0b2ae !important;
+  line-height: 1.7 !important; 
+  font-weight: 500; 
+  margin-bottom: 40px;
 }
-.hero-stats-row { display: flex; gap: 50px; margin-top: 40px; }
-.hero-stat-item { display: flex; flex-direction: column; gap: 4px; }
-.hero-stat-item strong { font-family: 'Outfit', sans-serif; font-size: 2.2rem; font-weight: 950; color: #fcd34d; }
-.hero-stat-item span { font-size: 0.8rem; text-transform: uppercase; font-weight: 800; color: rgba(255,255,255,0.7); letter-spacing: 1px; }
+
+.hero-stats-row { 
+  display: flex; 
+  gap: 60px; 
+}
+
+.hero-stat-item { 
+  display: flex; 
+  flex-direction: column; 
+  gap: 4px; 
+  position: relative;
+}
+
+.hero-stat-item strong { 
+  font-family: 'Outfit', sans-serif; 
+  font-size: 2.5rem; 
+  font-weight: 1000; 
+  color: #fff; 
+}
+
+.hero-stat-item span { 
+  font-size: 0.75rem; 
+  text-transform: uppercase; 
+  font-weight: 900; 
+  color: #888a86; 
+  letter-spacing: 1px; 
+}
+
+.divider-p {
+  position: absolute;
+  left: -30px;
+  top: 10%;
+  height: 80%;
+  width: 1px;
+  background: rgba(255,255,255,0.1);
+}
+
+.hero-visual-element {
+  position: absolute;
+  right: -50px;
+  top: 50%;
+  transform: translateY(-50%);
+  opacity: 0.1;
+  color: #4ade80;
+  pointer-events: none;
+}
+
+.bg-globe-icon {
+  animation: slowRotate 60s linear infinite;
+}
+
+@keyframes slowRotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
 
 .ai-reco-row { background: #fff; border: 1.5px solid #eeedeb; border-radius: 32px; padding: 30px; margin-bottom: 60px; }
 .ai-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }

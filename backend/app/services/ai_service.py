@@ -156,10 +156,12 @@ async def get_farming_advice(user_query: str, context: dict) -> dict:
 
 async def analyze_crop_health(image_data: bytes, user_query: Optional[str] = None) -> dict:
     """
-    Three-stage pipeline:
-    1. YOLOv8 classifies the leaf disease with 99.6% accuracy.
-    2. Vision model validates it's actually a plant (rejects random photos).
-    3. Groq LLM generates detailed organic precautions for the identified disease.
+    Three-stage pipeline (strict order):
+    1. Vision AI validates it's actually a plant/leaf — ALWAYS runs first (gatekeeper).
+       Non-plant images are immediately rejected. YOLO cannot do this — it is trained
+       only on plant disease classes and will assign a disease label to ANY image.
+    2. YOLOv8 classifies the disease — only runs if Stage 1 confirms a plant.
+    3. Groq LLM generates detailed organic treatment advice for the identified disease.
     """
     try:
         from PIL import Image
@@ -167,11 +169,75 @@ async def analyze_crop_health(image_data: bytes, user_query: Optional[str] = Non
     except Exception:
         return _error_analysis("Invalid image file. Please upload a valid JPG or PNG.")
 
-    # STAGE 1: YOLOv8 Classification
+    # ── STAGE 1: VISION AI PLANT VALIDATION (ALWAYS FIRST — STRICT GATEKEEPER) ──
+    # CRITICAL: YOLO is trained ONLY on tomato disease classes. It will assign one of
+    # those labels to ANY image (a dog, a car, food, anything). We MUST use Vision AI
+    # first to confirm the image is actually a plant before letting YOLO classify it.
+    is_plant = False
+    plant_rejection_reason = "This does not appear to be a plant or leaf image."
+
+    if not client:
+        return _error_analysis(
+            "AI verification service is offline. Cannot safely analyze the image."
+        )
+
+    base64_image = base64.b64encode(image_data).decode('utf-8')
+    try:
+        validation = await client.chat.completions.create(
+            messages=[{
+                "role": "user",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": (
+                            "You are a strict agricultural image gatekeeper. "
+                            "Your ONLY job is to determine if this image shows a plant leaf, crop, or vegetation."
+                            "\n\nRULES:"
+                            "\n- ACCEPT: Close-up of a leaf, plant stem, crop row, vegetable on plant, fruit on plant, or any agricultural plant."
+                            "\n- REJECT: People, animals, food on plates, buildings, vehicles, bare soil without plants, sky, indoor objects, random items, blurry unrecognizable images."
+                            "\n- When in doubt → mark is_plant as false."
+                            "\n\nReply ONLY with valid JSON (no markdown): "
+                            '{"is_plant": true/false, "plant_type": "type of plant if detected or null", "reason": "one sentence reason"}'
+                        )
+                    },
+                    {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}},
+                ],
+            }],
+            model=VISION_MODEL,
+            max_tokens=200,
+            temperature=0.1,
+        )
+        v = json.loads(_clean_json_response(validation.choices[0].message.content))
+        is_plant = v.get("is_plant", False)
+        plant_rejection_reason = v.get("reason", plant_rejection_reason)
+        logger.info(f"Vision plant gate: is_plant={is_plant}, reason={plant_rejection_reason}")
+    except Exception as e:
+        logger.error(f"Vision validation error: {e}")
+        return _error_analysis(
+            "Our image verification system is temporarily unavailable. Please try again in a moment."
+        )
+
+    # Hard gate: if not a plant, reject immediately with clear message
+    if not is_plant:
+        return {
+            "diagnosis": "Invalid Image — Not a Plant",
+            "severity": "None",
+            "advice": (
+                f"❌ {plant_rejection_reason} "
+                f"Please upload a clear, close-up photo of a plant leaf or crop to get an accurate disease analysis. "
+                f"Valid examples: tomato leaves, crop rows, leaves showing spots or discoloration."
+            ),
+            "precautions": [],
+            "safety_measures": [],
+            "is_organic_friendly": True,
+            "confidence": 0,
+            "is_valid_plant": False,
+        }
+
+    # ── STAGE 2: YOLOv8 DISEASE CLASSIFICATION (plant confirmed — safe to run) ──
     yolo = _get_yolo_model()
     yolo_diagnosis = None
     yolo_confidence = 0.0
-    is_plant = False
 
     if yolo:
         try:
@@ -179,82 +245,37 @@ async def analyze_crop_health(image_data: bytes, user_query: Optional[str] = Non
             top1_idx = results[0].probs.top1
             top1_conf = float(results[0].probs.top1conf)
             raw_label = results[0].names[top1_idx]
-            is_plant = top1_conf >= 0.5
             yolo_confidence = top1_conf
             yolo_diagnosis = DISEASE_LABELS.get(raw_label, raw_label.replace("_", " "))
             logger.info(f"YOLOv8 detected: {yolo_diagnosis} ({yolo_confidence:.2%})")
+
+            # Require minimum confidence — low score means YOLO is unsure, skip it
+            if top1_conf < 0.55:
+                logger.info(f"YOLO confidence too low ({top1_conf:.2%}), falling back to Vision AI")
+                yolo_diagnosis = None
+                yolo_confidence = 0.0
         except Exception as e:
             logger.error(f"YOLOv8 inference error: {e}")
 
-    # STAGE 2: Vision validation if YOLO is unsure or unavailable
-    if not yolo or not is_plant:
-        if client:
-            base64_image = base64.b64encode(image_data).decode('utf-8')
-            try:
-                validation = await client.chat.completions.create(
-                    messages=[{
-                        "role": "user",
-                        "content": [
-                            {"type": "text", "text": (
-                                "Is this image showing a plant leaf or crop? "
-                                "Reply ONLY with valid JSON: {\"is_plant\": true/false, \"reason\": \"brief reason\"}"
-                            )},
-                            {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}},
-                        ],
-                    }],
-                    response_format={"type": "json_object"},
-                )
-                v = json.loads(_clean_json_response(validation.choices[0].message.content))
-                is_plant = v.get("is_plant", False)
-                if not is_plant:
-                    return {
-                        "diagnosis": "Not a Plant Image",
-                        "severity": "None",
-                        "advice": (
-                            f"🌿 This image does not appear to be a plant or crop leaf. "
-                            f"{v.get('reason', '')} Please upload a clear, close-up photo of a plant leaf "
-                            f"or crop showing the disease symptoms for accurate analysis."
-                        ),
-                        "precautions": [],
-                        "safety_measures": [],
-                        "is_organic_friendly": True,
-                        "confidence": 0,
-                        "is_valid_plant": False
-                    }
-            except Exception as e:
-                logger.error(f"Vision validation error: {e}")
-
-    # STAGE 3: Groq generates precautions for the detected disease
-    if client and yolo_diagnosis and is_plant:
+    # ── STAGE 3: GENERATE TREATMENT ADVICE ───────────────────────────────────
+    # Path A: YOLO gave a confident diagnosis — generate specific treatment
+    if client and yolo_diagnosis:
         is_healthy = "healthy" in yolo_diagnosis.lower()
         prompt = f"""You are a Master Crop Disease Specialist and Organic Farming Expert for Indian farmers.
 
-A YOLOv8 AI model scanned a plant image and detected: "{yolo_diagnosis}" with {yolo_confidence:.1%} confidence.
+A YOLOv8 AI model scanned a verified plant image and detected: "{yolo_diagnosis}" with {yolo_confidence:.1%} confidence.
 
 {"The plant appears HEALTHY. Provide encouraging tips to keep it thriving organically." if is_healthy else "The plant has a DISEASE. Provide specific, detailed organic treatment steps and safety precautions."}
 
 Farmer note: {user_query or "No additional info provided."}
 
-Respond ONLY with this exact JSON:
+Respond ONLY with valid JSON (no markdown):
 {{
     "diagnosis": "{yolo_diagnosis}",
-    "severity": "Low/Medium/High",
-    "advice": "A comprehensive 3-4 sentence paragraph explaining what this disease is, how it spreads, what damage it causes, and the best organic treatment approach.",
-    "precautions": [
-        "Step 1: Specific organic product or technique with exact dosage/method",
-        "Step 2: Second treatment step",
-        "Step 3: Third treatment step",
-        "Step 4: Fourth preventive measure",
-        "Step 5: Long-term organic management tip",
-        "Step 6: Soil or environmental improvement tip"
-    ],
-    "safety_measures": [
-        "Personal safety measure 1 for the farmer with specific detail",
-        "Safety measure 2",
-        "Safety measure 3",
-        "Safety measure 4",
-        "Post-treatment hygiene step"
-    ],
+    "severity": "{"None" if is_healthy else "Low/Medium/High"}",
+    "advice": "A comprehensive 3-4 sentence paragraph explaining what this is, how it spreads, and the best organic treatment approach.",
+    "precautions": ["Step 1", "Step 2", "Step 3", "Step 4", "Step 5", "Step 6"],
+    "safety_measures": ["Measure 1", "Measure 2", "Measure 3", "Measure 4", "Measure 5"],
     "is_organic_friendly": true
 }}"""
 
@@ -263,7 +284,7 @@ Respond ONLY with this exact JSON:
                 messages=[{"role": "user", "content": prompt}],
                 model=TEXT_MODEL,
                 response_format={"type": "json_object"},
-                temperature=0.4
+                temperature=0.4,
             )
             content = response.choices[0].message.content
             result = json.loads(_clean_json_response(content))
@@ -273,31 +294,76 @@ Respond ONLY with this exact JSON:
         except Exception as e:
             logger.error(f"Groq precaution generation error: {e}")
 
-    # Fallback: YOLO worked but Groq is down
-    if yolo_diagnosis and is_plant:
+    # Path B: YOLO worked but Groq is down — return basic YOLO result
+    if yolo_diagnosis:
+        is_healthy = "healthy" in yolo_diagnosis.lower()
         return {
             "diagnosis": yolo_diagnosis,
-            "severity": "Medium",
-            "advice": f"YOLOv8 detected: {yolo_diagnosis}. The plant shows signs that require immediate attention. Apply organic treatment methods and monitor closely over the next 48 hours.",
+            "severity": "None" if is_healthy else "Medium",
+            "advice": (
+                f"{'✅ Your plant appears healthy!' if is_healthy else f'⚠️ Disease detected: {yolo_diagnosis}.'} "
+                f"{'Continue your current organic routine.' if is_healthy else 'Apply organic treatment and monitor closely.'}"
+            ),
             "precautions": [
-                "Isolate affected plants immediately to prevent spread",
-                "Remove and destroy all visibly infected leaves",
-                "Avoid overhead watering — use drip irrigation instead",
-                "Apply Neem oil spray (5ml per litre) every 3 days",
-                "Dust affected areas with wood ash to reduce fungal spread",
-                "Improve air circulation by pruning dense foliage"
+                "Maintain current watering schedule",
+                "Apply vermicompost every 2 weeks",
+                "Inspect leaves weekly for early signs",
+                "Use mulching to retain moisture",
+                "Rotate crops each season",
+                "Ensure adequate plant spacing",
+            ] if is_healthy else [
+                "Isolate affected plants immediately",
+                "Remove and destroy all infected leaves",
+                "Avoid overhead watering — use drip irrigation",
+                "Apply Neem oil spray (5ml/litre) every 3 days",
+                "Dust affected areas with wood ash",
+                "Improve air circulation by pruning dense foliage",
             ],
             "safety_measures": [
-                "Wear gloves and a mask when handling affected plants",
-                "Wash hands thoroughly with soap after contact",
-                "Disinfect all tools used with 70% alcohol solution",
-                "Do not consume affected produce without expert clearance",
-                "Keep children and animals away from treated areas for 24 hours"
+                "Wear gloves when handling plants",
+                "Wash hands thoroughly with soap after field work",
+                "Disinfect all tools with 70% alcohol solution",
+                "Do not consume affected produce without clearance",
+                "Keep children and animals away from treated areas for 24 hours",
             ],
             "is_organic_friendly": True,
             "confidence": round(yolo_confidence * 100, 1),
-            "is_valid_plant": True
+            "is_valid_plant": True,
         }
+
+    # Path C: YOLO unavailable but Vision confirmed it's a plant — ask Groq Vision directly
+    try:
+        vision_diagnosis = await client.chat.completions.create(
+            messages=[{
+                "role": "user",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": (
+                            "You are a certified crop disease specialist. "
+                            "This image has been verified to show a plant or leaf. "
+                            "Analyze it carefully for any disease, pest damage, or nutrient deficiency. "
+                            f"Farmer note: {user_query or 'General health check'}. "
+                            "Respond ONLY with valid JSON (no markdown): "
+                            '{"diagnosis": "Disease name or Healthy", "severity": "None/Low/Medium/High", '
+                            '"advice": "3-4 sentence paragraph", "precautions": ["step1","step2","step3","step4","step5"], '
+                            '"safety_measures": ["m1","m2","m3"], "is_organic_friendly": true}'
+                        )
+                    },
+                    {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}},
+                ],
+            }],
+            model=VISION_MODEL,
+            max_tokens=1000,
+            temperature=0.3,
+        )
+        content = vision_diagnosis.choices[0].message.content
+        result = json.loads(_clean_json_response(content))
+        result["confidence"] = 0
+        result["is_valid_plant"] = True
+        return result
+    except Exception as e:
+        logger.error(f"Vision fallback diagnosis error: {e}")
 
     return _mock_vision_analysis()
 

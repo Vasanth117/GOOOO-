@@ -452,8 +452,6 @@ const DashboardLayout = () => {
                     overflowY: 'auto',
                     padding: '24px 32px',
                     minHeight: 0,
-                    height: '100%',
-                    maxHeight: 'calc(100vh - 76px)',
                     overscrollBehaviorY: 'contain'
                 }}>
                     <Outlet />

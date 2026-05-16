@@ -7,7 +7,7 @@ import {
     Home, Leaf, Trophy, ShoppingBag, Users, Map, Brain,
     Bell, MessageCircle, Search, Settings, LogOut, Award,
     Heart, MessageSquare, Globe, Target, LayoutDashboard,
-    Bot, Image, ShoppingCart, User, Gift, Ticket, Camera, Loader2
+    Bot, Image, ShoppingCart, User, Gift, Ticket, Camera, Loader2, Menu
 } from 'lucide-react';
 import logo from '../assets/images/logo.png';
 
@@ -40,6 +40,7 @@ const TOPBAR_TITLES = {
 
 const DashboardLayout = () => {
     const [sidebarHovered, setSidebarHovered] = useState(false);
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const { user, logout } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
@@ -71,7 +72,9 @@ const DashboardLayout = () => {
         if (!user?.id) return;
 
         const token = localStorage.getItem('access_token');
-        const socket = new WebSocket(`ws://localhost:8000/api/v1/messages/ws/${user.id}`);
+        const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+        const wsUrl = baseUrl.replace('http', 'ws');
+        const socket = new WebSocket(`${wsUrl}/api/v1/messages/ws/${user.id}`);
         
         socket.onopen = () => console.log('🟢 Real-time Gateway Connected');
         socket.onmessage = (event) => {
@@ -161,14 +164,32 @@ const DashboardLayout = () => {
 
     return (
         <div className="dashboard-root" style={{ display: 'flex', height: '100vh', background: '#fbfdfb', overflow: 'hidden' }}>
+            {/* Mobile Overlay */}
+            <div 
+                className={`mobile-overlay ${mobileMenuOpen ? 'active' : ''}`} 
+                onClick={() => setMobileMenuOpen(false)}
+            />
+
             <motion.aside
-                className="sidebar"
+                className={`sidebar ${mobileMenuOpen ? 'mobile-open' : ''}`}
                 variants={sidebarVariants}
-                animate={sidebarHovered ? 'expanded' : 'collapsed'}
+                animate={sidebarHovered && !mobileMenuOpen ? 'expanded' : 'collapsed'}
                 transition={{ duration: 0.3, ease: 'easeInOut' }}
                 onMouseEnter={() => setSidebarHovered(true)}
                 onMouseLeave={() => setSidebarHovered(false)}
-                style={{ background: 'white', borderRight: '1px solid #eeedeb', display: 'flex', flexDirection: 'column' }}
+                style={{ 
+                    background: 'white', 
+                    borderRight: '1px solid #eeedeb', 
+                    display: 'flex', 
+                    flexDirection: 'column',
+                    position: 'sticky',
+                    top: 0,
+                    height: '100vh',
+                    zIndex: 1001,
+                    overflowY: 'auto',
+                    scrollbarWidth: 'none',
+                    msOverflowStyle: 'none'
+                }}
             >
                 <div className="sidebar-logo" style={{ padding: '24px 20px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 12 }} onClick={() => navigate('/dashboard')}>
                     <motion.img src={logo} alt="GOO" style={{ width: 34, height: 34 }} whileHover={{ rotate: 360 }} />
@@ -185,7 +206,10 @@ const DashboardLayout = () => {
                         return (
                             <button
                                 key={item.label}
-                                onClick={() => navigate(item.path)}
+                                onClick={() => {
+                                    navigate(item.path);
+                                    setMobileMenuOpen(false);
+                                }}
                                 style={{
                                     display: 'flex', alignItems: 'center', width: '100%', padding: '12px 24px', border: 'none', background: 'transparent',
                                     color: isActive ? '#2d5a27' : '#4a4d48', fontWeight: isActive ? 800 : 600, cursor: 'pointer', position: 'relative'
@@ -205,14 +229,37 @@ const DashboardLayout = () => {
                 </button>
             </motion.aside>
 
-            <div className="dashboard-main" style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100vh', background: '#fbfdfb', position: 'relative' }}>
-                <header style={{ height: 76, background: 'rgba(255,255,255,0.8)', backdropFilter: 'blur(20px)', borderBottom: '1px solid #eeedeb', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 40px', position: 'sticky', top: 0, zIndex: 1000 }}>
+            <div className="dashboard-main" style={{ 
+                flex: 1, 
+                display: 'grid', 
+                gridTemplateRows: '76px 1fr', 
+                height: '100vh', 
+                background: '#fbfdfb', 
+                position: 'relative', 
+                overflow: 'hidden' 
+            }}>
+                <header className="dashboard-header" style={{ 
+                    height: 76, 
+                    background: 'rgba(255,255,255,0.8)', 
+                    backdropFilter: 'blur(20px)', 
+                    borderBottom: '1px solid #eeedeb', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'space-between', 
+                    padding: '0 40px', 
+                    position: 'sticky', 
+                    top: 0, 
+                    zIndex: 1000 
+                }}>
                     <div style={{ display: 'flex', flexDirection: 'column' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                            <button className="mobile-menu-btn" onClick={() => setMobileMenuOpen(true)}>
+                                <Menu size={24} color="#1a1c19" />
+                            </button>
                             <pageInfo.icon size={20} color="#2d5a27" />
                             <h2 style={{ fontSize: '1.2rem', fontWeight: 950, margin: 0 }}>{pageInfo.title}</h2>
                         </div>
-                        <span style={{ fontSize: '0.75rem', color: '#888', fontWeight: 600 }}>{pageInfo.sub}</span>
+                        <span style={{ fontSize: '0.75rem', color: '#888', fontWeight: 600, paddingLeft: 34 }}>{pageInfo.sub}</span>
                     </div>
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
@@ -381,7 +428,7 @@ const DashboardLayout = () => {
                         >
                             {user?.profile_picture ? (
                                 <img 
-                                    src={user.profile_picture.startsWith('http') ? user.profile_picture : `http://localhost:8000${user.profile_picture}`} 
+                                    src={user.profile_picture.startsWith('http') ? user.profile_picture : `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}${user.profile_picture}`} 
                                     alt="me" 
                                     style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                                     onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}
@@ -399,11 +446,15 @@ const DashboardLayout = () => {
                     </div>
                 </header>
 
-                <main style={{ 
+                <main className="dashboard-content" style={{ 
                     flex: 1, 
-                    overflowY: 'auto', 
                     background: '#fbfdfb',
-                    minHeight: 0 // Important for nested flex scroll
+                    overflowY: 'auto',
+                    padding: '24px 32px',
+                    minHeight: 0,
+                    height: '100%',
+                    maxHeight: 'calc(100vh - 76px)',
+                    overscrollBehaviorY: 'contain'
                 }}>
                     <Outlet />
                 </main>

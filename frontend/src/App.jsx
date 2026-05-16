@@ -16,8 +16,9 @@ import MessagesPage from './pages/MessagesPage'
 import CameraPage from './pages/CameraPage'
 import FieldMapPage from './pages/FieldMapPage'
 import DashboardLayout from './components/DashboardLayout'
-import { PublicRoute, PrivateRoute } from './components/ProtectedRoute'
+import { PublicRoute, PrivateRoute, AdminRoute } from './components/ProtectedRoute'
 import { Construction } from 'lucide-react'
+import AdminDashboard from './pages/admin/AdminDashboard'
 function App() {
   return (
     <Routes>
@@ -43,6 +44,9 @@ function App() {
 
       {/* 📸 FULL PAGE CAMERA (No Sidebar/Topbar) */}
       <Route path="/camera" element={<CameraPage />} />
+
+      {/* 🔐 ADMIN PANEL — Logs in via /login, redirected here by role */}
+      <Route path="/admin/dashboard" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
     </Routes>
   )
 }

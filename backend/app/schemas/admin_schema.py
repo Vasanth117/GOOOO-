@@ -1,6 +1,13 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, EmailStr
 from typing import Optional, List
 from datetime import datetime
+
+
+# ─── AUTH ─────────────────────────────────────────────────────
+
+class AdminLoginRequest(BaseModel):
+    email: str
+    password: str
 
 
 # ─── USER MANAGEMENT ─────────────────────────────────────────
@@ -14,11 +21,44 @@ class BanUserRequest(BaseModel):
     reason: Optional[str] = None
 
 
+class AdjustPointsRequest(BaseModel):
+    delta: int  # positive = add, negative = deduct
+    reason: str
+
+
 # ─── FRAUD MANAGEMENT ─────────────────────────────────────────
 
 class FraudFlagReviewRequest(BaseModel):
     status: str = Field(..., pattern="^(resolved|dismissed)$")
     admin_notes: str
+
+
+# ─── GRC ─────────────────────────────────────────────────────
+
+class GRCApplicationActionRequest(BaseModel):
+    action: str = Field(..., pattern="^(approve|reject)$")
+    notes: Optional[str] = None
+
+
+# ─── REWARDS ─────────────────────────────────────────────────
+
+class AdminVoucherRequest(BaseModel):
+    title: str
+    description: str
+    discount_percent: Optional[int] = None
+    fixed_amount: Optional[float] = None
+    points_cost: int
+    expiry_days: int = 30
+    category: Optional[str] = "general"
+
+
+class AdminBadgeRequest(BaseModel):
+    name: str
+    description: str
+    icon: Optional[str] = "🏅"
+    tier: Optional[str] = "bronze"
+    condition_type: Optional[str] = None
+    condition_value: Optional[int] = None
 
 
 # ─── RESPONSE SCHEMAS ────────────────────────────────────────

@@ -101,6 +101,12 @@
   box-sizing: border-box;
 }
 
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
 html {
   font-size: 16px;
   scroll-behavior: smooth;
@@ -1694,6 +1700,56 @@ ul, ol { list-style: none; }
 }
 
 .btn-ghost:hover { background: rgba(255,255,255,0.15); border-color: #fff; }
+
+/* Auth Mobile Responsiveness */
+@media (max-width: 768px) {
+  .auth-wrapper {
+    padding: 16px;
+  }
+  .auth-container {
+    min-height: 600px;
+  }
+  .form-container {
+    width: 100%;
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    z-index: 1;
+    background: #fff;
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.3s ease;
+  }
+  .sign-in-container {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .auth-container.right-panel-active .sign-in-container {
+    opacity: 0;
+    pointer-events: none;
+  }
+  .auth-container.right-panel-active .sign-up-container {
+    opacity: 1;
+    pointer-events: auto;
+    transform: none;
+    z-index: 5;
+  }
+  .overlay-container {
+    display: none; /* Hide fancy overlay on mobile */
+  }
+  .mobile-auth-switch {
+    display: block !important;
+    text-align: center;
+    margin-top: 16px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--color-text-3);
+  }
+  .mobile-auth-switch span {
+    color: var(--color-primary);
+    cursor: pointer;
+    margin-left: 6px;
+  }
+}
 
 /* ───────────────────────────────────────────────
    18. MISSIONS PAGE
@@ -6073,3 +6129,87 @@ ul, ol { list-style: none; }
 .messages-loading-state { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; }
 .spinner { animation: rotate 1s linear infinite; }
 @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+/* ───────────────────────────────────────────────
+   DASHBOARD MOBILE RESPONSIVENESS
+   ─────────────────────────────────────────────── */
+.mobile-overlay {
+  display: none;
+}
+
+.mobile-menu-btn {
+  display: none;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  margin-right: 12px;
+  color: var(--color-text-1);
+}
+
+@media (max-width: 768px) {
+  .dashboard-root {
+    flex-direction: column !important;
+  }
+  
+  .sidebar {
+    position: fixed !important;
+    left: -100%;
+    z-index: 9999 !important;
+    transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    width: 260px !important;
+    bottom: 0;
+    box-shadow: 4px 0 24px rgba(0,0,0,0.1);
+  }
+  
+  .sidebar.mobile-open {
+    left: 0;
+  }
+  
+  .dashboard-main {
+    width: 100% !important;
+  }
+
+  .dashboard-header {
+    padding: 0 16px !important;
+  }
+  
+  .dashboard-content {
+    padding: 16px !important;
+  }
+  
+  .mobile-overlay {
+    display: block !important;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.4);
+    z-index: 9998;
+    backdrop-filter: blur(4px);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+  }
+
+  .mobile-overlay.active {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  
+  .mobile-menu-btn {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Make grids 1 column on mobile */
+  .stat-grid {
+    grid-template-columns: 1fr !important;
+  }
+  
+  .product-grid {
+    grid-template-columns: 1fr !important;
+  }
+  
+  .responsive-table-container {
+    overflow-x: auto;
+  }
+}

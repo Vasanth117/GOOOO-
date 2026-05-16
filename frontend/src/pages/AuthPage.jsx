@@ -29,8 +29,13 @@ const AuthPage = () => {
         setError('');
         setIsLoading(true);
         try {
-            await login(loginData.email, loginData.password);
-            navigate('/dashboard');
+            const userData = await login(loginData.email, loginData.password);
+            // Admin users go to admin dashboard, everyone else to main dashboard
+            if (userData?.role === 'admin') {
+                navigate('/admin/dashboard');
+            } else {
+                navigate('/dashboard');
+            }
         } catch (err) {
             setError(err.message || 'Login failed. Please check your credentials.');
         } finally {
@@ -117,6 +122,10 @@ const AuthPage = () => {
                         >
                             {isLoading ? <span className="auth-spinner" /> : 'Sign Up'}
                         </motion.button>
+                        
+                        <div className="mobile-auth-switch" style={{ display: 'none' }}>
+                            Already have an account? <span onClick={togglePanel}>Sign In</span>
+                        </div>
                     </form>
                 </div>
 
@@ -166,6 +175,10 @@ const AuthPage = () => {
                         >
                             {isLoading ? <span className="auth-spinner" /> : 'Sign In'}
                         </motion.button>
+
+                        <div className="mobile-auth-switch" style={{ display: 'none' }}>
+                            Don't have an account? <span onClick={togglePanel}>Sign Up</span>
+                        </div>
                     </form>
                 </div>
 

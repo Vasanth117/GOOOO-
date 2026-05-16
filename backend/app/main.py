@@ -33,6 +33,7 @@ from app.routes import user_routes, chat_routes
 # ─── Seeders ─────────────────────────────────────────────────
 from app.services.badge_service import seed_badge_definitions
 from app.services.mission_seeder import seed_missions
+from app.services.admin_seeder import seed_admin_user
 from app.jobs.scheduler import start_scheduler, stop_scheduler
 
 # ─── LOGGING ─────────────────────────────────────────────────
@@ -53,6 +54,7 @@ async def lifespan(app: FastAPI):
     # Run seeders
     await seed_badge_definitions()
     await seed_missions()
+    await seed_admin_user()
 
     # Create upload directories
     os.makedirs(os.path.join(settings.UPLOAD_DIR, "proofs"), exist_ok=True)

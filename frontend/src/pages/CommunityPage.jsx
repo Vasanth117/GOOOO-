@@ -61,7 +61,7 @@ const CommunityPage = () => {
         try {
             let postType = '';
             if (activeCategory === 'Organic Experts') postType = 'eco';
-            else if (activeCategory !== 'All Discusson') postType = 'missions';
+            else if (activeCategory !== 'All Discussion' && activeCategory !== 'All') postType = 'missions';
 
             const [feedData, expertData, verificationData, profileData] = await Promise.all([
                 apiService.getFeed(1, postType),
@@ -127,11 +127,18 @@ const CommunityPage = () => {
             formData.append('content', newPostContent);
             if (selectedFile) formData.append('image', selectedFile);
             
-            await apiService.createPost(formData);
+            const response = await apiService.createPost(formData);
+            
+            // Optimistic UI update: Add the post locally to the top of the feed
+            if (response && response.post) {
+                setPosts(prev => [response.post, ...prev]);
+            } else {
+                loadFeed();
+            }
+            
             setNewPostContent('');
             setSelectedFile(null);
             setFilePreview(null);
-            loadFeed(); 
         } catch (error) {
             alert('Error creating post. Please try again.');
         } finally {
@@ -254,7 +261,7 @@ const CommunityPage = () => {
                     <div className="sidebar-card">
                         <h3 className="sidebar-section-title"><Target size={14} /> Knowledge Hub</h3>
                         <div className="nav-vertical-list">
-                            {['All Discusson', 'Organic Experts', 'Tech Tips', 'Market Trends'].map(cat => (
+                            {['All Discussion', 'Organic Experts', 'Tech Tips', 'Market Trends'].map(cat => (
                                 <button 
                                     key={cat} 
                                     className={`nav-v-btn ${activeCategory === cat ? 'active' : ''}`}
@@ -288,7 +295,7 @@ const CommunityPage = () => {
                 <div className="post-creator-card">
                     <div className="creator-main">
                         {user?.profile_picture ? (
-                            <img src={`http://localhost:8000${user.profile_picture}`} alt="me" className="creator-avatar" />
+                            <img src={`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}${user.profile_picture}`} alt="me" className="creator-avatar" />
                         ) : (
                             <div className="creator-avatar avatar-luxe-init" style={{ width: '48px', height: '48px', fontSize: '1.2rem' }}>
                                 {user?.name?.[0] || 'U'}
@@ -494,7 +501,7 @@ const PostCard = ({ post, idx, user, onLike, onFollow, onNavigate, comments, isC
                 <div className="author-luxe" onClick={() => onNavigate(`/profile/${post.author.id}`)}>
                     <div className="avatar-luxe-wrap">
                         {post.author.profile_picture ? (
-                            <img src={`http://localhost:8000${post.author.profile_picture}`} alt="avatar" />
+                            <img src={`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}${post.author.profile_picture}`} alt="avatar" />
                         ) : (
                             <div className="avatar-luxe-init">{post.author.name[0]}</div>
                         )}
@@ -530,7 +537,7 @@ const PostCard = ({ post, idx, user, onLike, onFollow, onNavigate, comments, isC
                 <p className="content-text-p">{post.content}</p>
                 {post.image_url && (
                     <div className="media-container-p">
-                        <img src={`http://localhost:8000${post.image_url}`} alt="post" />
+                        <img src={`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}${post.image_url}`} alt="post" />
                     </div>
                 )}
                 <div className="impact-footer-p">

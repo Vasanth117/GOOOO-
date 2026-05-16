@@ -25,8 +25,21 @@ export const PrivateRoute = ({ children }) => {
 };
 
 // Redirects logged-in users away from auth pages
+// Admin users go to /admin/dashboard, everyone else to /dashboard
 export const PublicRoute = ({ children }) => {
     const { user, loading } = useAuth();
     if (loading) return <Spinner />;
-    return user ? <Navigate to="/dashboard" replace /> : children;
+    if (!user) return children;
+    return user.role === 'admin'
+        ? <Navigate to="/admin/dashboard" replace />
+        : <Navigate to="/dashboard" replace />;
+};
+
+// Protects admin-only routes — non-admins bounce to /login
+export const AdminRoute = ({ children }) => {
+    const { user, loading } = useAuth();
+    if (loading) return <Spinner />;
+    if (!user) return <Navigate to="/login" replace />;
+    if (user.role !== 'admin') return <Navigate to="/dashboard" replace />;
+    return children;
 };

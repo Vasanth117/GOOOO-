@@ -1,8 +1,8 @@
 from typing import Optional, List
 import os
-import aiofiles
 from fastapi import UploadFile
 from app.config import settings
+from app.services.cloudinary_service import upload_image_to_cloudinary
 
 from app.models.product import Product
 from app.models.order import Order, OrderStatus
@@ -67,16 +67,11 @@ async def upload_product_image(user: User, file: UploadFile) -> dict:
     if ext not in [".jpg", ".jpeg", ".png", ".webp"]:
         error_response("Invalid file type. Use JPG, PNG or WEBP", 400)
 
-    filename = f"product_{user.id}_{datetime.utcnow().timestamp()}{ext}"
-    product_dir = os.path.join(settings.UPLOAD_DIR, "products")
-    os.makedirs(product_dir, exist_ok=True)
-    
-    path = os.path.join(product_dir, filename)
-    async with aiofiles.open(path, "wb") as f:
-        content = await file.read()
-        await f.write(content)
-    
-    return {"url": f"/uploads/products/{filename}"}
+    secure_url = await upload_image_to_cloudinary(file, folder="goo_products")
+    if not secure_url:
+        error_response("Failed to upload image", 500)
+        
+    return {"url": secure_url}
 
 
 async def get_products(

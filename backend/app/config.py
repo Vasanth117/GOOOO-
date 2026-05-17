@@ -38,6 +38,9 @@ class Settings(BaseSettings):
     # Files
     UPLOAD_DIR: str = "uploads"
     MAX_FILE_SIZE_MB: int = 10
+    
+    # Cloudinary
+    CLOUDINARY_URL: str = ""
 
     # CORS
     ALLOWED_ORIGINS: str = "http://localhost:3000,http://localhost:5173"
@@ -52,6 +55,7 @@ class Settings(BaseSettings):
     class Config:
         env_file = str(ENV_FILE)
         case_sensitive = True
+        extra = "ignore"
 
 
 @lru_cache()

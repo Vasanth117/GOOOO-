@@ -1,7 +1,6 @@
-import os
 import hashlib
-import aiofiles
 from fastapi import UploadFile
+from app.services.cloudinary_service import upload_image_to_cloudinary
 from datetime import datetime
 from typing import Optional
 
@@ -52,18 +51,16 @@ async def _save_file(file: UploadFile, farmer_id: str) -> tuple[str, str, str]:
     # Hash for duplicate detection
     file_hash = hashlib.sha256(content).hexdigest()
 
-    # Save to disk
-    upload_dir = os.path.join(settings.UPLOAD_DIR, "proofs", farmer_id)
-    os.makedirs(upload_dir, exist_ok=True)
-    filename = f"{file_hash}.{ext}"
-    filepath = os.path.join(upload_dir, filename)
+    # We need to seek back to 0 before uploading to cloudinary
+    await file.seek(0)
+    secure_url = await upload_image_to_cloudinary(file, folder=f"goo_proofs/{farmer_id}")
+    if not secure_url:
+        error_response("Failed to upload proof file.", 500)
 
-    if not os.path.exists(filepath):
-        async with aiofiles.open(filepath, "wb") as f:
-            await f.write(content)
+    # We need to seek back to 0 so the AI vision analysis can read it again later
+    await file.seek(0)
 
-    file_url = f"/uploads/proofs/{farmer_id}/{filename}"
-    return file_url, file_type, file_hash
+    return secure_url, file_type, file_hash
 
 
 # ─── FARMER: SUBMIT PROOF ────────────────────────────────────

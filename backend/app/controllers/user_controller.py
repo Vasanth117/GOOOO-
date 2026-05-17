@@ -11,6 +11,7 @@ import shutil
 import os
 from pathlib import Path
 from fastapi import UploadFile
+from app.services.cloudinary_service import upload_image_to_cloudinary
 
 logger = logging.getLogger(__name__)
 
@@ -92,11 +93,10 @@ async def update_profile(
         ext = Path(avatar.filename).suffix.lower()
         if ext not in [".jpg", ".jpeg", ".png", ".webp"]:
             return error_response("Invalid image type. JPG/PNG only.", 400)
-        filename = f"{str(user.id)}{ext}"
-        filepath = UPLOAD_DIR / filename
-        with open(filepath, "wb") as f:
-            shutil.copyfileobj(avatar.file, f)
-        user.profile_picture = f"/uploads/avatars/{filename}?v={int(datetime.utcnow().timestamp())}"
+            
+        secure_url = await upload_image_to_cloudinary(avatar, folder="goo_avatars")
+        if secure_url:
+            user.profile_picture = secure_url
 
     user.updated_at = datetime.utcnow()
     await user.save()

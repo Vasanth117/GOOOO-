@@ -1,9 +1,9 @@
 from fastapi import UploadFile
 from typing import Optional, List
 import os
-import aiofiles
 import hashlib
 from datetime import datetime
+from app.services.cloudinary_service import upload_image_to_cloudinary
 
 from app.models.post import Post
 from app.models.comment import Comment
@@ -81,17 +81,13 @@ async def create_post(
 ) -> dict:
     image_url = None
     if image and image.filename:
-        ext = os.path.splitext(image.filename)[1]
-        filename = f"{user.id}_{datetime.utcnow().timestamp()}{ext}"
-        post_dir = os.path.join(settings.UPLOAD_DIR, "posts")
-        os.makedirs(post_dir, exist_ok=True)
-        
-        path = os.path.join(post_dir, filename)
-        async with aiofiles.open(path, "wb") as f:
-            content_bytes = await image.read()
-            await f.write(content_bytes)
-        
-        image_url = f"/uploads/posts/{filename}"
+        ext = os.path.splitext(image.filename)[1].lower()
+        if ext not in [".jpg", ".jpeg", ".png", ".webp"]:
+            return error_response("Invalid file type. Use JPG, PNG or WEBP", 400)
+            
+        secure_url = await upload_image_to_cloudinary(image, folder="goo_posts")
+        if secure_url:
+            image_url = secure_url
 
     post = Post(
         author_id=str(user.id),

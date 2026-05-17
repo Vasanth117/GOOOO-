@@ -231,8 +231,8 @@ const DashboardLayout = () => {
 
             <div className="dashboard-main" style={{ 
                 flex: 1, 
-                display: 'grid', 
-                gridTemplateRows: '76px 1fr', 
+                display: 'flex', 
+                flexDirection: 'column',
                 height: '100vh', 
                 background: '#fbfdfb', 
                 position: 'relative', 
@@ -240,6 +240,7 @@ const DashboardLayout = () => {
             }}>
                 <header className="dashboard-header" style={{ 
                     height: 76, 
+                    flexShrink: 0,
                     background: 'rgba(255,255,255,0.8)', 
                     backdropFilter: 'blur(20px)', 
                     borderBottom: '1px solid #eeedeb', 

@@ -11,8 +11,8 @@ from app.services.notification_service import send_notification
 from app.models.notification import NotificationType
 from app.utils.response_utils import error_response, not_found
 from app.config import settings
-import aiofiles
 import hashlib
+from app.services.cloudinary_service import upload_image_to_cloudinary
 
 async def submit_periodic_report(
     user: User,
@@ -33,17 +33,11 @@ async def submit_periodic_report(
 
     # 2. Save live photo
     content = await file.read()
-    file_hash = hashlib.sha256(content).hexdigest()
-    upload_dir = os.path.join(settings.UPLOAD_DIR, "reports", str(user.id))
-    os.makedirs(upload_dir, exist_ok=True)
-    ext = file.content_type.split("/")[1] if file.content_type else "jpg"
-    filename = f"report_{file_hash}.{ext}"
-    filepath = os.path.join(upload_dir, filename)
+    await file.seek(0)
     
-    async with aiofiles.open(filepath, "wb") as f:
-        await f.write(content)
-    
-    file_url = f"/uploads/reports/{user.id}/{filename}"
+    file_url = await upload_image_to_cloudinary(file, folder=f"goo_reports/{user.id}")
+    if not file_url:
+        error_response("Failed to upload report photo.", 500)
 
     # 3. AI Analysis for abnormal growth
     materials_str = ", ".join(organic_materials) if isinstance(organic_materials, list) else str(organic_materials)

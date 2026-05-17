@@ -1,9 +1,9 @@
 from fastapi import APIRouter, File, UploadFile, Form, Depends, HTTPException
 from typing import Optional
-import aiofiles
 import os
 from uuid import uuid4
 import logging
+from app.services.cloudinary_service import upload_image_to_cloudinary
 
 from app.models.user import User
 from app.models.periodic_report import PeriodicReport
@@ -25,16 +25,13 @@ async def submit_organic_report(
     current_user: User = Depends(get_current_user)
 ):
     try:
-        # Save photo
-        file_ext = photo.filename.split('.')[-1]
-        unique_filename = f"{uuid4().hex}.{file_ext}"
-        file_path = os.path.join(UPLOAD_DIR, unique_filename)
+        # Save photo to Cloudinary
+        content = await photo.read()
+        await photo.seek(0)
         
-        async with aiofiles.open(file_path, 'wb') as out_file:
-            content = await photo.read()
-            await out_file.write(content)
-            
-        file_url = f"/api/v1/uploads/reports/{unique_filename}"
+        file_url = await upload_image_to_cloudinary(photo, folder="goo_reports")
+        if not file_url:
+            raise HTTPException(status_code=500, detail="Failed to upload photo.")
         
         # Analyze with AI
         ai_result = await ai_service.analyze_periodic_report(content, report_text)

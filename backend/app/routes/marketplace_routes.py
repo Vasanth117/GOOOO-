@@ -112,8 +112,11 @@ async def clear_cart(user: User = Depends(get_current_user)):
 
 
 @router.get("/seller/{seller_id}/profile", summary="High-Trust Seller Profile View")
-async def get_seller_profile_full(seller_id: str):
-    result = await marketplace_controller.get_seller_profile_full(seller_id)
+async def get_seller_profile_full(
+    seller_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    result = await marketplace_controller.get_seller_profile_full(seller_id, current_user)
     return success_response(result)
 
 

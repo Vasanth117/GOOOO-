@@ -5,7 +5,7 @@ import {
     ChevronRight, Star, ShieldCheck, Leaf,
     Tag, MapPin, Plus, Package, DollarSign,
     TrendingUp, Image as ImageIcon, CheckCircle2,
-    X, ArrowRight, User, History, Wallet, Ticket, UserCheck, Zap,
+    X, ArrowRight, User, History, Wallet, Ticket, UserCheck, UserPlus, Zap,
     Box, Truck, CreditCard, StarHalf, MessageCircle,
     ArrowLeft, Trash2, LayoutDashboard, Store,
     ThumbsUp, Share2, Award, Clock, ClipboardList,
@@ -192,6 +192,35 @@ const MarketplacePage = () => {
             alert("Failed to load seller journey");
         } finally {
             setIsProfileLoading(false);
+        }
+    };
+
+    const handleFollowSeller = async () => {
+        if (!sellerProfile || !sellerProfile.seller_id) return;
+        const sellerId = sellerProfile.seller_id;
+        
+        if (sellerId === user?.id) {
+            alert("You cannot follow yourself!");
+            return;
+        }
+        
+        // Optimistic UI update
+        setSellerProfile(prev => ({
+            ...prev,
+            is_following: !prev.is_following
+        }));
+        
+        try {
+            const res = await apiService.toggleFollow(sellerId);
+            // Optionally, show a clean message or toast
+        } catch (e) {
+            console.error("Failed to follow seller:", e);
+            // Revert on error
+            setSellerProfile(prev => ({
+                ...prev,
+                is_following: !prev.is_following
+            }));
+            alert("Failed to change follow status");
         }
     };
 
@@ -897,7 +926,7 @@ const MarketplacePage = () => {
             {/* ── MODALS & OVERLAYS ── */}
             <AnimatePresence>
                 {showCart && (
-                    <div className="modal-luxe-overlay" onClick={() => setShowCart(false)}>
+                    <div key="cart-modal" className="modal-luxe-overlay" onClick={() => setShowCart(false)}>
                         <motion.div className="cart-sidebar-modal" initial={{ x: 400 }} animate={{ x: 0 }} onClick={e => e.stopPropagation()}>
                             <div className="cart-header">
                                 <h3><ShoppingCart size={20} /> Your Shopping Bag</h3>
@@ -945,7 +974,7 @@ const MarketplacePage = () => {
                 )}
 
                 {selectedProduct && (
-                    <div className="modal-luxe-overlay" onClick={() => setSelectedProduct(null)}>
+                    <div key="product-detail-modal" className="modal-luxe-overlay" onClick={() => setSelectedProduct(null)}>
                         <motion.div className="product-detail-glass" initial={{ y: 50 }} animate={{ y: 0 }} onClick={e => e.stopPropagation()}>
                             <div className="pd-left">
                                 <img src={selectedProduct.image_url || selectedProduct.img || img1} alt="p" className="pd-main-img" />
@@ -1008,7 +1037,7 @@ const MarketplacePage = () => {
 
             <AnimatePresence>
                 {sellerProfile && (
-                    <div className="modal-luxe-overlay" onClick={() => setSellerProfile(null)}>
+                    <div key="seller-profile-modal" className="modal-luxe-overlay" onClick={() => setSellerProfile(null)}>
                         <motion.div className="insta-profile-modal" initial={{ scale: 0.9 }} animate={{ scale: 1 }} onClick={e => e.stopPropagation()} style={{ position: 'relative', maxWidth: '950px' }}>
                             <button className="btn-close-pd" onClick={() => setSellerProfile(null)} style={{ top: '30px', right: '30px' }}><X /></button>
 
@@ -1084,15 +1113,37 @@ const MarketplacePage = () => {
                                             )}
                                         </div>
 
-                                        <div style={{ marginTop: 32, padding: 24, background: '#f4f4f2', borderRadius: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                            <div>
-                                                <div style={{ fontSize: '1rem', fontWeight: 950 }}>Build Trust Through Transparency</div>
-                                                <p style={{ margin: 0, color: '#666', fontSize: '0.85rem', fontWeight: 600 }}>This profile aggregates verified proof from live farming missions.</p>
+                                        {sellerProfile.seller_id !== user?.id && (
+                                            <div style={{ marginTop: 32, padding: 24, background: '#f4f4f2', borderRadius: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                <div>
+                                                    <div style={{ fontSize: '1rem', fontWeight: 950 }}>Build Trust Through Transparency</div>
+                                                    <p style={{ margin: 0, color: '#666', fontSize: '0.85rem', fontWeight: 600 }}>This profile aggregates verified proof from live farming missions.</p>
+                                                </div>
+                                                <button 
+                                                    className={`btn-primary ${sellerProfile.is_following ? 'following' : ''}`} 
+                                                    onClick={handleFollowSeller}
+                                                    style={{ 
+                                                        display: 'flex', 
+                                                        alignItems: 'center', 
+                                                        gap: 8,
+                                                        background: sellerProfile.is_following ? '#166534' : '#2d5a27',
+                                                        color: '#fff',
+                                                        border: 'none',
+                                                        padding: '12px 20px',
+                                                        borderRadius: '12px',
+                                                        fontWeight: 'bold',
+                                                        cursor: 'pointer',
+                                                        transition: 'all 0.2s ease-in-out'
+                                                    }}
+                                                >
+                                                    {sellerProfile.is_following ? (
+                                                        <><UserCheck size={18} /> Following</>
+                                                    ) : (
+                                                        <><UserPlus size={18} /> Follow Farming Journey</>
+                                                    )}
+                                                </button>
                                             </div>
-                                            <button className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                                <UserCheck size={18} /> Follow Farming Journey
-                                            </button>
-                                        </div>
+                                        )}
                                     </div>
                                 </div>
                             )}
@@ -1100,7 +1151,7 @@ const MarketplacePage = () => {
                     </div>
                 )}
                 {showAddProduct && (
-                    <div className="modal-luxe-overlay" onClick={() => setShowAddProduct(false)}>
+                    <div key="add-product-modal" className="modal-luxe-overlay" onClick={() => setShowAddProduct(false)}>
                         <motion.div className="insta-profile-modal" initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} onClick={e => e.stopPropagation()} style={{ maxWidth: '600px', background: '#fff', border: '1px solid var(--color-border)', boxShadow: '0 40px 100px rgba(0,0,0,0.1)', padding: '30px', borderRadius: '16px' }}>
                             <div className="insta-header" style={{ borderBottom: '1.5px solid var(--color-border)', paddingBottom: '15px', color: '#1a1c19' }}>
                                 <h2 style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '1.4rem', margin: 0, color: '#1a1c19' }}><Store size={22} color="#2d5a27" /> Add New Store Product</h2>
@@ -1188,7 +1239,7 @@ const MarketplacePage = () => {
                 )}
 
                 {showEditProduct && editingProduct && (
-                    <div className="modal-luxe-overlay" onClick={() => setShowEditProduct(false)}>
+                    <div key="edit-product-modal" className="modal-luxe-overlay" onClick={() => setShowEditProduct(false)}>
                         <motion.div className="insta-profile-modal" initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} onClick={e => e.stopPropagation()} style={{ maxWidth: '600px', background: '#fff', border: '1px solid var(--color-border)', boxShadow: '0 40px 100px rgba(0,0,0,0.1)', padding: '30px', borderRadius: '16px' }}>
                             <div className="insta-header">
                                 <h2 style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '1.4rem' }}><Edit3 size={22} color="#2d5a27" /> Edit Listing: {editingProduct.name}</h2>
@@ -1221,7 +1272,7 @@ const MarketplacePage = () => {
                 )}
 
                 {showOrderDetails && selectedOrder && (
-                    <div className="modal-luxe-overlay" onClick={() => setShowOrderDetails(false)}>
+                    <div key="order-details-modal" className="modal-luxe-overlay" onClick={() => setShowOrderDetails(false)}>
                         <motion.div className="insta-profile-modal" initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} onClick={e => e.stopPropagation()} style={{ maxWidth: '500px', background: '#fff', overflow: 'hidden', padding: 0, borderRadius: '24px' }}>
                             <div style={{ background: '#2d5a27', padding: '30px', color: '#fff' }}>
                                 <h3 style={{ margin: 0, fontSize: '1.5rem' }}>Order Shipment Details</h3>

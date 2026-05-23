@@ -60,11 +60,35 @@ const ManageProducts = ({ products, onRefresh }) => {
     const handleSave = async (e) => {
         e.preventDefault();
         setLoading(true);
+
+        if (!formData.name || formData.name.trim().length < 3) {
+            alert("Product name must be at least 3 characters long.");
+            setLoading(false);
+            return;
+        }
+        if (!formData.description || formData.description.trim().length < 10) {
+            alert("Product description must be at least 10 characters long.");
+            setLoading(false);
+            return;
+        }
+
+        // Parse and sanitize payload to match backend CreateProductRequest / UpdateProductRequest
+        const sanitizedPayload = {
+            ...formData,
+            price: parseFloat(formData.price) || 0.0,
+            stock: parseInt(formData.stock) || 0,
+            discount_percent: parseFloat(formData.discount_percent) || 0.0,
+            is_featured: !!formData.is_featured,
+            is_eco_certified: !!formData.is_eco_certified,
+            growth_stages: formData.growth_stages ? formData.growth_stages.filter(s => s.stage && s.date) : [],
+            farming_tasks: formData.farming_tasks || []
+        };
+
         try {
             if (editingProduct) {
-                await apiService.updateProduct(editingProduct.id, formData);
+                await apiService.updateProduct(editingProduct.id, sanitizedPayload);
             } else {
-                await apiService.createProduct(formData);
+                await apiService.createProduct(sanitizedPayload);
             }
             setShowAddModal(false);
             setEditingProduct(null);
@@ -111,7 +135,7 @@ const ManageProducts = ({ products, onRefresh }) => {
                         <Filter size={18} />
                         Filter
                     </button>
-                    <button className="btn-primary" id="add-product-btn-real" onClick={() => { setEditingProduct(null); setFormData({name: '', description: '', category: 'other', price: '', stock: '', image_url: '', proof_images: [], discount_percent: 0, is_featured: false, is_eco_certified: false}); setShowAddModal(true); }}>
+                    <button className="btn-primary" id="add-product-btn-real" onClick={() => { setEditingProduct(null); setFormData({name: '', description: '', category: 'other', price: '', stock: '', image_url: '', proof_images: [], growth_stages: [{stage: 'Sowing', date: '', proof: ''}], farming_tasks: [{task: 'Fertilization', status: 'pending'}], discount_percent: 0, is_featured: false, is_eco_certified: false}); setShowAddModal(true); }}>
                         <Plus size={18} />
                         Create Listing
                     </button>

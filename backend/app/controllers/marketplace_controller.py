@@ -10,6 +10,7 @@ from app.models.reward import Reward, RewardType
 from app.models.user import User
 from app.models.farm_profile import FarmProfile
 from app.models.review import ProductReview
+from app.models.follow import Follow
 from app.schemas.marketplace_schema import CreateProductRequest, UpdateProductRequest, CreateOrderRequest
 from app.services.notification_service import send_notification
 from app.models.notification import NotificationType
@@ -456,7 +457,7 @@ async def clear_cart(user: User) -> dict:
 
 # ─── TRUST & SELLER PROFILE ─────────────────────────────────────
 
-async def get_seller_profile_full(seller_id: str) -> dict:
+async def get_seller_profile_full(seller_id: str, viewer: Optional[User] = None) -> dict:
     """Aggregates all data to build a high-trust seller profile."""
     seller = await safe_get(User, seller_id)
     if not seller:
@@ -470,7 +471,15 @@ async def get_seller_profile_full(seller_id: str) -> dict:
     verified_posts_count = len([p for p in posts if p.is_verified_post])
     eco_points = (verified_posts_count * 50) + (100 if profile else 0)
     
+    is_following = False
+    if viewer:
+        is_following = await Follow.find_one(
+            Follow.follower_id == str(viewer.id),
+            Follow.following_id == seller_id,
+        ) is not None
+
     return {
+        "seller_id": seller_id,
         "seller_name": seller.name,
         "seller_avatar": seller.profile_picture,
         "joined_at": seller.created_at,
@@ -478,7 +487,8 @@ async def get_seller_profile_full(seller_id: str) -> dict:
         "profile": profile.dict() if profile else None,
         "posts": [p.dict() for p in posts],
         "products": [await _product_to_dict(l) for l in listings],
-        "is_goo_verified": True if verified_posts_count > 5 else False
+        "is_goo_verified": True if verified_posts_count > 5 else False,
+        "is_following": is_following
     }
 
 

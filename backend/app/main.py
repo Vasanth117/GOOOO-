@@ -95,6 +95,8 @@ ALLOWED_ORIGINS = settings.allowed_origins_list + [
     "http://localhost:5173",
     "http://127.0.0.1:3000",
     "http://127.0.0.1:5173",
+    "https://frontend-two-zeta-85.vercel.app",
+    "https://frontend-two-zeta-85-vasanth117s-projects.vercel.app",
 ]
 
 app.add_middleware(

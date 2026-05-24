@@ -97,6 +97,7 @@ ALLOWED_ORIGINS = settings.allowed_origins_list + [
     "http://127.0.0.1:5173",
     "https://frontend-two-zeta-85.vercel.app",
     "https://frontend-two-zeta-85-vasanth117s-projects.vercel.app",
+    "https://goo-hazel-sigma.vercel.app",
 ]
 
 app.add_middleware(

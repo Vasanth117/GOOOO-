@@ -72,7 +72,7 @@ const DashboardLayout = () => {
         if (!user?.id) return;
 
         const token = localStorage.getItem('access_token');
-        const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+        const baseUrl = (import.meta.env.VITE_API_URL || 'http://localhost:8000').replace('/api/v1', '');
         const wsUrl = baseUrl.replace('http', 'ws');
         const socket = new WebSocket(`${wsUrl}/api/v1/messages/ws/${user.id}`);
         

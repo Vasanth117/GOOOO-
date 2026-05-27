@@ -9,8 +9,10 @@ import {
 } from "lucide-react";
 import { apiService } from '../services/apiService';
 import CameraCapture from '../components/CameraCapture';
+import { useNavigate } from 'react-router-dom';
 
 const MissionsPage = () => {
+    const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('solo'); // solo, community, completed
     const [timeFilter, setTimeFilter] = useState('daily'); // daily, weekly, monthly
     const [missions, setMissions] = useState([]);
@@ -23,10 +25,12 @@ const MissionsPage = () => {
     const [selectedTask, setSelectedTask] = useState(null);
     const [historyMissions, setHistoryMissions] = useState([]);
     const [submitting, setSubmitting] = useState(false);
+    const [error, setError] = useState(null);
 
     useEffect(() => {
         const loadAll = async () => {
             try {
+                setError(null);
                 const [missionData, communityData, statData, historyData] = await Promise.all([
                     apiService.getMissions(),
                     apiService.getCommunityMissions(),
@@ -49,6 +53,7 @@ const MissionsPage = () => {
                 setStats(statData);
             } catch (err) {
                 console.error(err);
+                setError(err.message || 'Failed to load missions.');
             } finally {
                 setLoading(false);
             }
@@ -70,6 +75,26 @@ const MissionsPage = () => {
     };
 
     if (loading) return <div style={{ display: 'flex', height: '80vh', alignItems: 'center', justifyContent: 'center' }}><Loader2 className="animate-spin" size={48} color="#2d5a27" /></div>;
+
+    if (error && (error.includes('Farm Profile') || error.includes('farm profile') || error.includes('farm details'))) {
+        return (
+            <div style={{ display: 'flex', flexDirection: 'column', height: '80vh', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '0 20px', background: '#f8faf8' }}>
+                <div style={{ background: '#fee2e2', padding: '24px', borderRadius: '50%', color: '#ef4444', marginBottom: '20px' }}>
+                    <MapPin size={48} />
+                </div>
+                <h2 style={{ fontSize: '2rem', fontWeight: 950, color: '#1a1c19', margin: '0 0 10px' }}>Farm Profile Required</h2>
+                <p style={{ fontSize: '1.1rem', color: '#666', maxWidth: '500px', lineHeight: 1.6, margin: '0 0 30px' }}>
+                    Before our AI Farming Advisor can assign personalized eco-missions and load your tasks, you must complete your Farm Profile details.
+                </p>
+                <button 
+                    onClick={() => navigate('/profile')} 
+                    style={{ background: '#2d5a27', color: 'white', padding: '16px 36px', borderRadius: '16px', border: 'none', fontWeight: 900, fontSize: '1.1rem', cursor: 'pointer', boxShadow: '0 10px 20px rgba(45, 90, 39, 0.2)', transition: '0.3s' }}
+                >
+                    Set Up Farm Details
+                </button>
+            </div>
+        );
+    }
 
     const activeMissions = missions.filter(m => m.status === 'in_progress' || m.status === 'pending_review');
     const availableMissions = missions.filter(m => 

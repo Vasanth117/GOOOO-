@@ -229,7 +229,7 @@ const AIPage = () => {
                                     {m.role === 'ai' ? <Bot size={18} /> : (
                                         user?.profile_picture ? (
                                             <img 
-                                                src={user.profile_picture.startsWith('http') ? user.profile_picture : `http://localhost:8000${user.profile_picture}`} 
+                                                src={user.profile_picture.startsWith('http') ? user.profile_picture : `${(import.meta.env.VITE_API_URL || 'http://localhost:8000').replace('/api/v1', '')}${user.profile_picture}`} 
                                                 alt="" 
                                                 style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} 
                                             />

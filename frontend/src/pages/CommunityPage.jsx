@@ -295,7 +295,7 @@ const CommunityPage = () => {
                 <div className="post-creator-card">
                     <div className="creator-main">
                         {user?.profile_picture ? (
-                            <img src={`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}${user.profile_picture}`} alt="me" className="creator-avatar" />
+                            <img src={`${(import.meta.env.VITE_API_URL || 'http://localhost:8000').replace('/api/v1', '')}${user.profile_picture}`} alt="me" className="creator-avatar" />
                         ) : (
                             <div className="creator-avatar avatar-luxe-init" style={{ width: '48px', height: '48px', fontSize: '1.2rem' }}>
                                 {user?.name?.[0] || 'U'}
@@ -501,7 +501,7 @@ const PostCard = ({ post, idx, user, onLike, onFollow, onNavigate, comments, isC
                 <div className="author-luxe" onClick={() => onNavigate(`/profile/${post.author.id}`)}>
                     <div className="avatar-luxe-wrap">
                         {post.author.profile_picture ? (
-                            <img src={`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}${post.author.profile_picture}`} alt="avatar" />
+                            <img src={`${(import.meta.env.VITE_API_URL || 'http://localhost:8000').replace('/api/v1', '')}${post.author.profile_picture}`} alt="avatar" />
                         ) : (
                             <div className="avatar-luxe-init">{post.author.name[0]}</div>
                         )}
@@ -537,7 +537,7 @@ const PostCard = ({ post, idx, user, onLike, onFollow, onNavigate, comments, isC
                 <p className="content-text-p">{post.content}</p>
                 {post.image_url && (
                     <div className="media-container-p">
-                        <img src={`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}${post.image_url}`} alt="post" />
+                        <img src={`${(import.meta.env.VITE_API_URL || 'http://localhost:8000').replace('/api/v1', '')}${post.image_url}`} alt="post" />
                     </div>
                 )}
                 <div className="impact-footer-p">

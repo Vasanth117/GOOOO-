@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Query, File, UploadFile
+from fastapi import APIRouter, Depends, Query, File, UploadFile, HTTPException
 from typing import List
 from app.schemas.mission_schema import CreateMissionRequest, ReviewProofRequest
 from app.controllers import mission_controller, periodic_report_controller
@@ -16,6 +16,8 @@ async def get_active_missions(current_user: User = Depends(require_farmer)):
     try:
         result = await mission_controller.get_active_missions(current_user)
         return success_response(result)
+    except HTTPException:
+        raise
     except Exception as e:
         import traceback
         error_msg = f"ROUTE ERROR: {str(e)}\n{traceback.format_exc()}"

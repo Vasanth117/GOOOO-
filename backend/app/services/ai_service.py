@@ -460,29 +460,45 @@ async def analyze_periodic_report(image_data: bytes, report_text: str) -> dict:
 
 
 async def generate_personalized_missions(farm_profile: dict, weather: dict) -> List[dict]:
-    """Generates 3 personalized daily missions based on farm data and climate."""
+    """Generates 9 personalized missions (3 Daily, 3 Weekly, 3 Monthly) strictly based on farm data and climate."""
     if not client:
         return [
-            {"title": "Morning Hydration", "description": "Water your crops early to avoid evaporation.", "difficulty": "easy", "points": 10},
-            {"title": "Soil Check", "description": "Check soil moisture levels manually.", "difficulty": "easy", "points": 15},
-            {"title": "Leaf Inspection", "description": "Look for any signs of early pests.", "difficulty": "medium", "points": 20}
+            # DAILY
+            {"title": "Morning Crop Hydration", "description": "Water your crops early to avoid evaporation.", "difficulty": "easy", "reward_points": 10, "mission_type": "daily", "eco_benefit": "Reduces water waste.", "next_step": "Water the crop beds.", "personalization_tag": "For your irrigation type"},
+            {"title": "Soil Moisture Check", "description": "Check soil moisture levels manually.", "difficulty": "easy", "reward_points": 15, "mission_type": "daily", "eco_benefit": "Prevents overwatering.", "next_step": "Check soil 2 inches deep.", "personalization_tag": "For your soil type"},
+            {"title": "Pest Inspection Walk", "description": "Inspect leaf undersides for signs of pests.", "difficulty": "medium", "reward_points": 20, "mission_type": "daily", "eco_benefit": "Avoids chemical pesticides.", "next_step": "Inspect 5 plants.", "personalization_tag": "For your crops"},
+            # WEEKLY
+            {"title": "Weekly Organic Fertilizer Feed", "description": "Feed crops with rich organic compost.", "difficulty": "medium", "reward_points": 40, "mission_type": "weekly", "eco_benefit": "Increases soil microbiology.", "next_step": "Apply compost to beds.", "personalization_tag": "For your practices"},
+            {"title": "Water Flow Audit", "description": "Audit your irrigation system for any leaks.", "difficulty": "medium", "reward_points": 35, "mission_type": "weekly", "eco_benefit": "Conserves groundwater.", "next_step": "Walk the entire pipe/hose line.", "personalization_tag": "For your irrigation type"},
+            {"title": "Natural Weed Management", "description": "Clear weeds manually and lay organic mulch.", "difficulty": "medium", "reward_points": 50, "mission_type": "weekly", "eco_benefit": "Maintains soil temperature and humidity.", "next_step": "Mulch the weeded area.", "personalization_tag": "For your farm size"},
+            # MONTHLY
+            {"title": "Deep Soil Nourishment", "description": "Add Peat/Loam organic cover to boost soil nitrogen.", "difficulty": "hard", "reward_points": 100, "mission_type": "monthly", "eco_benefit": "Rebuilds depleted topsoil.", "next_step": "Cover entire target crop plot.", "personalization_tag": "For your soil type"},
+            {"title": "Crop Rotation Planning", "description": "Plan your next seasonal crop rotation pattern.", "difficulty": "hard", "reward_points": 80, "mission_type": "monthly", "eco_benefit": "Prevents pest cycles naturally.", "next_step": "Submit your rotation map plan.", "personalization_tag": "For your crop types"},
+            {"title": "Zero Chemical Milestone", "description": "Verify zero synthetic pesticide usage for 30 days.", "difficulty": "hard", "reward_points": 120, "mission_type": "monthly", "eco_benefit": "Restores biological balance.", "next_step": "Submit organic log records.", "personalization_tag": "For your practices"}
         ]
 
     system_prompt = (
-        "You are the GOO AI Mission Architect. Your goal is to create 3 HYPER-PERSONALIZED, high-impact organic farming missions. "
-        "Analyze the provided FARM PROFILE (crops, soil) and current WEATHER conditions carefully. "
-        "Missions should be seasonally and climatically relevant. If it is hot/dry, focus on water conservation. "
-        "If they grow specific crops, give missions specific to those crops' growth cycles. "
-        "Make the 'title' catchy and the 'description' scientific yet simple. "
+        "You are the GOO AI Mission Architect. Your goal is to create exactly 9 HYPER-PERSONALIZED, high-impact organic farming missions "
+        "(comprising exactly 3 daily, 3 weekly, and 3 monthly missions)."
+        "\n\nYou MUST analyze and customize the tasks STRICTLY based on all the farmer's custom profile properties: "
+        "\n- Crop types: Create tasks directly relevant to managing, watering, weeding, or harvesting these specific crops. Do not assign general or unrelated crops."
+        "\n- Soil type: Recommend soil amendments, aeration, or nutrition specifically suited for this soil class (e.g. clay, sandy, loam)."
+        "\n- Irrigation type: Design water-saving or irrigation audit tasks tailored for this system (e.g. drip, flood, rain-fed)."
+        "\n- Fertilizer / Pesticide usage: Recommend organic swaps or compost applications if they are using chemical inputs."
+        "\n- Farming practice: Align the mission with the farmer's chosen practice (organic, regenerative, conventional, permaculture, biodynamic, etc.)."
+        "\n- Farm size: Set the scale of tasks (e.g. smaller container tasks for micro-farms, larger grid management for large acreage)."
+        "\n- Current Weather: Adapt to local precipitation, temperature, and wind levels (e.g. rainwater storage tasks if raining, mulching/shade tasks if dry/hot)."
+        "\nMake the 'title' catchy and the 'description' scientific yet simple. "
         "\n\nSTRICT JSON output format (PURE JSON WRAPPED IN OBJECT ONLY): "
         "{\"missions\": [{"
         "  \"title\": \"string\", "
         "  \"description\": \"string\", "
+        "  \"mission_type\": \"daily/weekly/monthly\", "
         "  \"difficulty\": \"easy/medium/hard\", "
         "  \"reward_points\": int, "
         "  \"eco_benefit\": \"string (What it does for environment)\", "
         "  \"next_step\": \"string (Single actionable next step)\", "
-        "  \"personalization_tag\": \"string (Why it fits this user)\""
+        "  \"personalization_tag\": \"string (e.g. 'For your black soil growing wheat in hot dry weather')\""
         "}]}"
     )
 

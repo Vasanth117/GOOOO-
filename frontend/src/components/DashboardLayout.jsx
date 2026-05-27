@@ -41,9 +41,18 @@ const TOPBAR_TITLES = {
 const DashboardLayout = () => {
     const [sidebarHovered, setSidebarHovered] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
     const { user, logout } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
+
+    useEffect(() => {
+        const handleResize = () => {
+            setIsMobile(window.innerWidth <= 768);
+        };
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     // ── SEARCH STATE ──
     const [searchQuery, setSearchQuery] = useState('');
@@ -173,7 +182,7 @@ const DashboardLayout = () => {
             <motion.aside
                 className={`sidebar ${mobileMenuOpen ? 'mobile-open' : ''}`}
                 variants={sidebarVariants}
-                animate={sidebarHovered && !mobileMenuOpen ? 'expanded' : 'collapsed'}
+                animate={isMobile ? 'expanded' : (sidebarHovered ? 'expanded' : 'collapsed')}
                 transition={{ duration: 0.3, ease: 'easeInOut' }}
                 onMouseEnter={() => setSidebarHovered(true)}
                 onMouseLeave={() => setSidebarHovered(false)}
@@ -194,7 +203,7 @@ const DashboardLayout = () => {
                 <div className="sidebar-logo" style={{ padding: '24px 20px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 12 }} onClick={() => navigate('/dashboard')}>
                     <motion.img src={logo} alt="GOO" style={{ width: 34, height: 34 }} whileHover={{ rotate: 360 }} />
                     <AnimatePresence>
-                        {sidebarHovered && (
+                        {(sidebarHovered || isMobile) && (
                             <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ fontWeight: 900, fontSize: '1.7rem', color: '#2d5a27', letterSpacing: -2 }}>goo</motion.span>
                         )}
                     </AnimatePresence>
@@ -216,7 +225,7 @@ const DashboardLayout = () => {
                                 }}
                             >
                                 <item.icon size={20} style={{ minWidth: 24 }} />
-                                {sidebarHovered && <span style={{ marginLeft: 16 }}>{item.label}</span>}
+                                {(sidebarHovered || isMobile) && <span style={{ marginLeft: 16 }}>{item.label}</span>}
                                 {isActive && <div style={{ position: 'absolute', right: 0, width: 4, height: 20, background: '#2d5a27', borderRadius: '4px 0 0 4px' }} />}
                             </button>
                         );
@@ -225,7 +234,7 @@ const DashboardLayout = () => {
 
                 <button onClick={handleLogout} style={{ padding: '24px', border: 'none', background: 'transparent', color: '#e63946', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
                     <LogOut size={20} />
-                    {sidebarHovered && <span style={{ marginLeft: 16 }}>Logout</span>}
+                    {(sidebarHovered || isMobile) && <span style={{ marginLeft: 16 }}>Logout</span>}
                 </button>
             </motion.aside>
 
@@ -247,33 +256,33 @@ const DashboardLayout = () => {
                     display: 'flex', 
                     alignItems: 'center', 
                     justifyContent: 'space-between', 
-                    padding: '0 40px', 
+                    padding: isMobile ? '0 16px' : '0 40px', 
                     position: 'sticky', 
                     top: 0, 
                     zIndex: 1000 
                 }}>
                     <div style={{ display: 'flex', flexDirection: 'column' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 6 : 10 }}>
                             <button className="mobile-menu-btn" onClick={() => setMobileMenuOpen(true)}>
                                 <Menu size={24} color="#1a1c19" />
                             </button>
-                            <pageInfo.icon size={20} color="#2d5a27" />
-                            <h2 style={{ fontSize: '1.2rem', fontWeight: 950, margin: 0 }}>{pageInfo.title}</h2>
+                            {!isMobile && <pageInfo.icon size={20} color="#2d5a27" />}
+                            <h2 style={{ fontSize: isMobile ? '1.05rem' : '1.2rem', fontWeight: 950, margin: 0 }}>{pageInfo.title}</h2>
                         </div>
-                        <span style={{ fontSize: '0.75rem', color: '#888', fontWeight: 600, paddingLeft: 34 }}>{pageInfo.sub}</span>
+                        {!isMobile && <span style={{ fontSize: '0.75rem', color: '#888', fontWeight: 600, paddingLeft: 34 }}>{pageInfo.sub}</span>}
                     </div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 8 : 20 }}>
                         <div className="topbar-search-wrap" style={{ position: 'relative' }}>
-                            <div className="topbar-search" style={{ background: '#f4f4f2', padding: '8px 16px', borderRadius: 12, display: 'flex', alignItems: 'center', gap: 10, width: 280 }}>
-                                <Search size={16} color="#aaa" />
+                            <div className="topbar-search" style={{ background: '#f4f4f2', padding: '8px 12px', borderRadius: 12, display: 'flex', alignItems: 'center', gap: 8, width: isMobile ? 120 : 280 }}>
+                                <Search size={16} color="#aaa" style={{ flexShrink: 0 }} />
                                 <input 
                                     type="text" 
-                                    placeholder="Search farmers..." 
+                                    placeholder="Search..." 
                                     value={searchQuery}
                                     onChange={(e) => handleSearch(e.target.value)}
                                     onFocus={() => searchQuery.trim() && setShowSearchDropdown(true)}
-                                    style={{ background: 'transparent', border: 'none', fontSize: '0.85rem', outline: 'none', width: '100%', fontWeight: 600 }} 
+                                    style={{ background: 'transparent', border: 'none', fontSize: '0.82rem', outline: 'none', width: '100%', fontWeight: 600 }} 
                                 />
                                 {searchLoading && <Loader2 size={14} className="spinner" style={{ animation: 'spin 1s linear infinite' }} />}
                             </div>
@@ -315,7 +324,7 @@ const DashboardLayout = () => {
                                                     >
                                                         <div style={{ width: 40, height: 40, borderRadius: '50%', overflow: 'hidden', background: '#eee' }}>
                                                             {u.profile_picture ? (
-                                                                <img src={u.profile_picture.startsWith('http') ? u.profile_picture : `http://localhost:8000${u.profile_picture}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                                <img src={u.profile_picture.startsWith('http') ? u.profile_picture : `${(import.meta.env.VITE_API_URL || 'http://localhost:8000').replace('/api/v1', '')}${u.profile_picture}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                                             ) : (
                                                                 <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#2d5a27', color: 'white', fontWeight: 900 }}>{u.name[0]}</div>
                                                             )}
@@ -429,7 +438,7 @@ const DashboardLayout = () => {
                         >
                             {user?.profile_picture ? (
                                 <img 
-                                    src={user.profile_picture.startsWith('http') ? user.profile_picture : `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}${user.profile_picture}`} 
+                                    src={user.profile_picture.startsWith('http') ? user.profile_picture : `${(import.meta.env.VITE_API_URL || 'http://localhost:8000').replace('/api/v1', '')}${user.profile_picture}`} 
                                     alt="me" 
                                     style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                                     onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}

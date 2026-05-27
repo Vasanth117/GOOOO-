@@ -57,6 +57,11 @@ async def _enrich_progress(mp: MissionProgress) -> dict:
 
 async def get_active_missions(user: User) -> dict:
     """Return all active/in-progress missions for a farmer, grouped by type."""
+    from app.models.farm_profile import FarmProfile
+    farm = await FarmProfile.find_one(FarmProfile.farmer_id == str(user.id))
+    if not farm:
+        error_response("Please complete your Farm Profile details to access and load eco-missions.", 400)
+
     try:
         progress_items = await MissionProgress.find(
             {
@@ -189,6 +194,8 @@ async def auto_assign_ai_missions(user: User) -> dict:
     from app.models.mission_progress import MissionProgress
 
     farm = await FarmProfile.find_one(FarmProfile.farmer_id == str(user.id))
+    if not farm:
+        error_response("Please complete your Farm Profile details to assign AI eco-missions.", 400)
 
     # ─── 1. FORCE ASSIGN COMMUNITY TASKS ───────────────────────────
     community_tasks = [
@@ -323,7 +330,7 @@ async def auto_assign_ai_missions(user: User) -> dict:
                 reward_points=int(am.get("reward_points", 20)),
                 eco_benefit=am.get("eco_benefit", "Supports sustainable farming."),
                 next_step=am.get("next_step", "Follow instructions to complete."),
-                personalization_tag=f"For your {soil_str} soil growing {crops_str}",
+                personalization_tag=am.get("personalization_tag", f"For your {soil_str} soil growing {crops_str}"),
                 duration_hours=duration,
                 created_by="SYSTEM_AI_PERSONALIZED"
             )

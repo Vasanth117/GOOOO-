@@ -245,7 +245,7 @@ const ManageProducts = ({ products, onRefresh }) => {
                                                 onChange={(e) => setFormData({...formData, category: e.target.value})}
                                             >
                                                 <option value="seeds">Seeds</option>
-                                                <option value="fertilizer">Fertilizer</option>
+                                                <option value="fertilizers">Fertilizer</option>
                                                 <option value="tools">Tools</option>
                                                 <option value="crops">Crops / Produce</option>
                                                 <option value="irrigation">Irrigation</option>

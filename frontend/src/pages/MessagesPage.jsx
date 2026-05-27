@@ -12,6 +12,7 @@ import { useNavigate } from 'react-router-dom';
 const MessagesPage = () => {
     const { user } = useAuth();
     const navigate = useNavigate();
+    const baseUrl = (import.meta.env.VITE_API_URL || 'http://localhost:8000').replace('/api/v1', '');
     const [chats, setChats] = useState([]);
     const [activeChat, setActiveChat] = useState(null);
     const [messages, setMessages] = useState([]);
@@ -41,8 +42,9 @@ const MessagesPage = () => {
     useEffect(() => {
         if (!user) return;
         
-        const token = localStorage.getItem('access_token');
-        const socket = new WebSocket(`ws://localhost:8000/api/v1/messages/ws/${user.id}`);
+        const wsProto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const apiHost = (import.meta.env.VITE_API_URL || 'http://localhost:8000').replace('http://', '').replace('https://', '');
+        const socket = new WebSocket(`${wsProto}//${apiHost}/messages/ws/${user.id}`);
         
         socket.onopen = () => console.log('WebSocket Connected');
         socket.onmessage = (event) => {
@@ -96,7 +98,7 @@ const MessagesPage = () => {
                     unique.push({
                         user_id: u.id,
                         name: u.name,
-                        avatar: u.profile_picture ? `http://localhost:8000${u.profile_picture}` : null
+                        avatar: u.profile_picture ? `${baseUrl}${u.profile_picture}` : null
                     });
                 }
             });
@@ -196,7 +198,7 @@ const MessagesPage = () => {
 
                 <div className="ms-list">
                     {filteredChats.map(chat => {
-                        const avatarUrl = chat.avatar ? (chat.avatar.startsWith('http') ? chat.avatar : `http://localhost:8000${chat.avatar}`) : null;
+                        const avatarUrl = chat.avatar ? (chat.avatar.startsWith('http') ? chat.avatar : `${baseUrl}${chat.avatar}`) : null;
                         return (
                             <div 
                                 key={chat.user_id} 
@@ -232,7 +234,7 @@ const MessagesPage = () => {
                         <div className="active-user-info" onClick={() => navigate(`/profile/${activeChat.user_id}`)} style={{ cursor: 'pointer' }}>
                             <button className="tool-btn mobile-only" onClick={(e) => { e.stopPropagation(); setActiveChat(null); }}><ArrowLeft size={20} /></button>
                             <div className="header-avatar">
-                                {activeChat.avatar ? <img src={activeChat.avatar.startsWith('http') ? activeChat.avatar : `http://localhost:8000${activeChat.avatar}`} alt="" /> : <div className="avatar-placeholder">{activeChat.name[0]}</div>}
+                                {activeChat.avatar ? <img src={activeChat.avatar.startsWith('http') ? activeChat.avatar : `${baseUrl}${activeChat.avatar}`} alt="" /> : <div className="avatar-placeholder">{activeChat.name[0]}</div>}
                             </div>
                             <div className="header-text">
                                 <h3>{activeChat.name}</h3>
@@ -249,7 +251,7 @@ const MessagesPage = () => {
                     <div className="chat-history-stream">
                         <div className="chat-intro-card">
                             <div className="intro-avatar">
-                                {activeChat.avatar ? <img src={activeChat.avatar.startsWith('http') ? activeChat.avatar : `http://localhost:8000${activeChat.avatar}`} alt="" /> : <div className="avatar-placeholder-large">{activeChat.name[0]}</div>}
+                                {activeChat.avatar ? <img src={activeChat.avatar.startsWith('http') ? activeChat.avatar : `${baseUrl}${activeChat.avatar}`} alt="" /> : <div className="avatar-placeholder-large">{activeChat.name[0]}</div>}
                             </div>
                             <h2 style={{ margin: 0, fontWeight: 950 }}>{activeChat.name}</h2>
                             <p style={{ color: '#666', fontWeight: 600, fontSize: '0.9rem' }}>Farmer · Network Member</p>
@@ -262,7 +264,7 @@ const MessagesPage = () => {
 
                         {messages.map((m, i) => {
                             const isOwn = String(m.sender_id) === String(user.id);
-                            const otherAvatarUrl = activeChat.avatar ? (activeChat.avatar.startsWith('http') ? activeChat.avatar : `http://localhost:8000${activeChat.avatar}`) : null;
+                            const otherAvatarUrl = activeChat.avatar ? (activeChat.avatar.startsWith('http') ? activeChat.avatar : `${baseUrl}${activeChat.avatar}`) : null;
                             return (
                                 <div key={m.id || i} className={`msg-bubble-wrap ${isOwn ? 'own-msg' : 'other-msg'}`}>
                                     {!isOwn && (

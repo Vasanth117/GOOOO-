@@ -38,11 +38,19 @@ async def safe_get(model, doc_id):
 
 async def create_product(user: User, data: CreateProductRequest) -> dict:
     """Sellers or Admins create products."""
+    category_str = data.category.lower().strip() if data.category else "other"
+    if category_str == "fertilizer":
+        category_str = "fertilizers"
+    elif category_str == "pesticide":
+        category_str = "pesticides"
+    elif category_str == "crop":
+        category_str = "crops"
+
     product = Product(
         seller_id=str(user.id),
         name=data.name,
         description=data.description,
-        category=data.category,
+        category=category_str,
         price=data.price,
         stock=data.stock,
         image_url=data.image_url,
@@ -86,7 +94,14 @@ async def get_products(
     """Browse the marketplace."""
     query: dict = {"is_active": True}
     if category:
-        query["category"] = category
+        cat_str = category.lower().strip()
+        if cat_str == "fertilizer":
+            cat_str = "fertilizers"
+        elif cat_str == "pesticide":
+            cat_str = "pesticides"
+        elif cat_str == "crop":
+            cat_str = "crops"
+        query["category"] = cat_str
     if search:
         query["$or"] = [
             {"name": {"$regex": search, "$options": "i"}},
@@ -133,6 +148,16 @@ async def update_product(product_id: str, user: User, data: UpdateProductRequest
         error_response("Unauthorized to update this product", 403)
 
     update_data = data.model_dump(exclude_unset=True)
+    if "category" in update_data and update_data["category"]:
+        cat_str = str(update_data["category"]).lower().strip()
+        if cat_str == "fertilizer":
+            cat_str = "fertilizers"
+        elif cat_str == "pesticide":
+            cat_str = "pesticides"
+        elif cat_str == "crop":
+            cat_str = "crops"
+        update_data["category"] = cat_str
+
     for key, value in update_data.items():
         setattr(product, key, value)
     

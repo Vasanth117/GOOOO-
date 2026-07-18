@@ -3,10 +3,10 @@ pipeline {
 
     environment {
         DOCKER_HUB_CREDS = credentials('docker-hub-credentials') // Jenkins Credentials ID
-        DOCKER_HUB_REPO_BACKEND = 'yourusername/goo-backend'
-        DOCKER_HUB_REPO_FRONTEND = 'yourusername/goo-frontend'
+        DOCKER_HUB_REPO_BACKEND = 'vasanth0711/goo-backend'
+        DOCKER_HUB_REPO_FRONTEND = 'vasanth0711/goo-frontend'
         GITHUB_CREDS = credentials('github-credentials') // GitHub credentials for manifest updates
-        MANIFEST_REPO_URL = 'https://github.com/yourusername/goo-k8s-manifests.git'
+        MANIFEST_REPO_URL = 'https://github.com/Vasanth117/goo-k8s-manifests.git'
         SONARQUBE_SERVER = 'SonarQubeServer' // Configured in Jenkins
     }
 
@@ -83,7 +83,7 @@ pipeline {
                     git config user.name "Jenkins CI"
                     git add .
                     git commit -m "Update image tags to build ${BUILD_NUMBER}"
-                    git push https://${GITHUB_CREDS_USR}:${GITHUB_CREDS_PSW}@github.com/yourusername/goo-k8s-manifests.git HEAD:main
+                    git push https://${GITHUB_CREDS_USR}:${GITHUB_CREDS_PSW}@github.com/Vasanth117/goo-k8s-manifests.git HEAD:main
                     '''
                 }
             }

@@ -1,6 +1,10 @@
 pipeline {
     agent any
 
+    tools {
+        sonarRunner 'sonar-scanner'
+    }
+
     environment {
         DOCKER_HUB_CREDS = credentials('docker-hub-credentials') // Jenkins Credentials ID
         DOCKER_HUB_REPO_BACKEND = 'vasanth0711/goo-backend'

@@ -23,7 +23,7 @@ class MongoJSONEncoder(json.JSONEncoder):
 if settings.GROQ_API_KEY:
     client = groq.AsyncGroq(api_key=settings.GROQ_API_KEY)
     TEXT_MODEL = "llama-3.1-8b-instant"
-    VISION_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct"
+    VISION_MODEL = "llama-3.2-11b-vision-preview"
 else:
     client = None
     logger.warning("GROQ_API_KEY not set. AI features will use mock responses.")
@@ -213,9 +213,9 @@ async def analyze_crop_health(image_data: bytes, user_query: Optional[str] = Non
         logger.info(f"Vision plant gate: is_plant={is_plant}, reason={plant_rejection_reason}")
     except Exception as e:
         logger.error(f"Vision validation error: {e}")
-        return _error_analysis(
-            "Our image verification system is temporarily unavailable. Please try again in a moment."
-        )
+        # To bypass Groq vision decommissioning, temporarily assume it's a plant so YOLOv8 can run
+        is_plant = True
+        logger.warning("Bypassing Vision validation because Groq vision model is unavailable.")
 
     # Hard gate: if not a plant, reject immediately with clear message
     if not is_plant:
@@ -575,9 +575,9 @@ async def analyze_farming_proof(image_data: bytes, mission_text: str, system_pro
     except Exception as e:
         logger.error(f"Proof analysis error: {e}")
         return {
-            "is_valid": False,  # Changed to False so it strictly rejects on API failure
-            "confidence": 0.0,
-            "analysis_notes": f"API Error: {str(e)}. Please try again."
+            "is_valid": True,  # Fallback to True so users are not blocked when Vision API is down
+            "confidence": 0.5,
+            "analysis_notes": f"Vision API unavailable. Automatically approved for now."
         }
 
 

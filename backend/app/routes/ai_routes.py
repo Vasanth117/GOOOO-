@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Body, File, UploadFile, Response
+from fastapi import APIRouter, Depends, Body, File, UploadFile, Response, Form
 from app.schemas.ai_schema import AdvisorChatRequest, CropRecommendationRequest, TTSRequest
 from app.controllers import ai_controller
 from app.middleware.auth_middleware import get_current_user, require_farmer
@@ -23,7 +23,7 @@ async def chat_with_advisor(
 @router.post("/analyze-health", summary="Analyze crop disease and safety")
 async def analyze_crop_health(
     file: UploadFile = File(...),
-    query: str = Body(None),
+    query: str = Form(None),
     current_user: User = Depends(get_current_user),
 ):
     """

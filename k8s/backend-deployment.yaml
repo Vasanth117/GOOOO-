@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: goo-backend
+  labels:
+    app: goo-backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: goo-backend
+  template:
+    metadata:
+      labels:
+        app: goo-backend
+    spec:
+      containers:
+      - name: goo-backend
+        image: yourusername/goo-backend:latest
+        ports:
+        - containerPort: 5000
+        env:
+        - name: FLASK_ENV
+          value: "production"
+        # Add other necessary env vars from your .env file
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"

@@ -95,7 +95,9 @@ const AIPage = () => {
         detect();
     }, [user?.name]);
 
-    const scrollToBottom = () => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const scrollToBottom = () => {
+        chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    };
     useEffect(scrollToBottom, [messages]);
 
     const handleSend = async (e, textOverride = null) => {

@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: goo-frontend
+  labels:
+    app: goo-frontend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: goo-frontend
+  template:
+    metadata:
+      labels:
+        app: goo-frontend
+    spec:
+      containers:
+      - name: goo-frontend
+        image: yourusername/goo-frontend:latest
+        ports:
+        - containerPort: 80
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "250m"

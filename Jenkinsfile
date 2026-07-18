@@ -1,10 +1,6 @@
 pipeline {
     agent any
 
-    tools {
-        sonarRunner 'sonar-scanner'
-    }
-
     environment {
         DOCKER_HUB_CREDS = credentials('docker-hub-credentials') // Jenkins Credentials ID
         DOCKER_HUB_REPO_BACKEND = 'vasanth0711/goo-backend'
@@ -23,8 +19,11 @@ pipeline {
 
         stage('SonarQube Scan & Quality Gate') {
             steps {
-                withSonarQubeEnv(env.SONARQUBE_SERVER) {
-                    sh 'sonar-scanner'
+                script {
+                    def scannerHome = tool 'sonar-scanner'
+                    withSonarQubeEnv(env.SONARQUBE_SERVER) {
+                        sh "${scannerHome}/bin/sonar-scanner"
+                    }
                 }
                 timeout(time: 10, unit: 'MINUTES') {
                     waitForQualityGate abortPipeline: true

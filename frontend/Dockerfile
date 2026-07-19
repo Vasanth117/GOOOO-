@@ -2,7 +2,8 @@
 FROM node:18-alpine as build-stage
 WORKDIR /app
 COPY package*.json ./
-RUN npm install
+# Remove Windows package-lock.json to force npm to resolve Linux/Alpine dependencies for Vite/Rollup
+RUN rm -f package-lock.json && npm install
 COPY . .
 RUN npm run build
 

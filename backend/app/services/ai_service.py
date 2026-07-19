@@ -23,7 +23,7 @@ class MongoJSONEncoder(json.JSONEncoder):
 if settings.GROQ_API_KEY:
     client = groq.AsyncGroq(api_key=settings.GROQ_API_KEY)
     TEXT_MODEL = "llama-3.1-8b-instant"
-    VISION_MODEL = "llama-3.2-11b-vision-preview"
+    VISION_MODEL = "qwen/qwen3.6-27b"
 else:
     client = None
     logger.warning("GROQ_API_KEY not set. AI features will use mock responses.")

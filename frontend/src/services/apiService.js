@@ -25,8 +25,11 @@ const apiRequest = async (endpoint, options = {}) => {
     });
     const data = await res.json();
     if (!res.ok) {
-        console.error("API ERROR BODY:", data);
-        throw new Error(data.message || data.detail || 'API Request failed');
+        const errorMsg = data.message || data.detail || '';
+        if (!errorMsg.includes('Farm Profile')) {
+            console.error("API ERROR BODY:", data);
+        }
+        throw new Error(errorMsg || 'API Request failed');
     }
     return data.data;
 };

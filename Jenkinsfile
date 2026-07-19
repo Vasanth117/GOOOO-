@@ -45,10 +45,10 @@ pipeline {
             steps {
                 script {
                     echo "Scanning Backend Image..."
-                    sh "trivy image --severity HIGH,CRITICAL ${env.DOCKER_HUB_REPO_BACKEND}:${env.BUILD_NUMBER}"
+                    sh "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy image --severity HIGH,CRITICAL ${env.DOCKER_HUB_REPO_BACKEND}:${env.BUILD_NUMBER}"
 
                     echo "Scanning Frontend Image..."
-                    sh "trivy image --severity HIGH,CRITICAL ${env.DOCKER_HUB_REPO_FRONTEND}:${env.BUILD_NUMBER}"
+                    sh "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy image --severity HIGH,CRITICAL ${env.DOCKER_HUB_REPO_FRONTEND}:${env.BUILD_NUMBER}"
                 }
             }
         }

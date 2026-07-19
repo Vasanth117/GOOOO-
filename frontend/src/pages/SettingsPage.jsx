@@ -336,7 +336,7 @@ const SettingsPage = () => {
 
                             {/* Change Password */}
                             <SectionHeader title="Change Password" subtitle="Use a strong password to protect your account" />
-                            <div className="settings-card">
+                            <form className="settings-card" onSubmit={e => { e.preventDefault(); savePassword(); }}>
                                 <div className="settings-input-grid">
                                     <div className="settings-field">
                                         <label>Current Password</label>
@@ -352,12 +352,12 @@ const SettingsPage = () => {
                                     </div>
                                 </div>
                                 <div className="settings-btn-row">
-                                    <button className="settings-outline-btn" onClick={() => setShowPw(!showPw)}>
+                                    <button type="button" className="settings-outline-btn" onClick={() => setShowPw(!showPw)}>
                                         {showPw ? <EyeOff size={16}/> : <Eye size={16}/>} {showPw ? 'Hide' : 'Show'} Passwords
                                     </button>
                                     <SaveBtn onClick={savePassword} label="Change Password" disabled={!pwForm.old} />
                                 </div>
-                            </div>
+                            </form>
                         </motion.div>
                     )}
 

@@ -21,4 +21,3 @@ pymongo>=4.9.0
 cloudinary==1.38.0
 
 email-validator>=2.0.0
-ultralytics>=8.0.0

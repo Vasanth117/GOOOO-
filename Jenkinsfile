@@ -22,7 +22,7 @@ pipeline {
                 script {
                     def scannerHome = tool 'sonar-scanner'
                     withSonarQubeEnv(env.SONARQUBE_SERVER) {
-                        sh "${scannerHome}/bin/sonar-scanner"
+                        sh "${scannerHome}/bin/sonar-scanner -Dsonar.python.version=3.10"
                     }
                 }
                 timeout(time: 10, unit: 'MINUTES') {

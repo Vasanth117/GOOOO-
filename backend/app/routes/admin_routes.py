@@ -269,7 +269,7 @@ async def admin_notifications(
     return success_response(result)
 
 
-# ─── MARKETPLACE ─────────────────────────────────────────────
+# ─── MARKETPLACE ────────────────────────────────────────────
 
 @router.get("/marketplace/stats", summary="Admin: Marketplace overview stats")
 async def get_marketplace_stats(

@@ -169,7 +169,7 @@ const AIPage = () => {
 
         // Show a preview of the image in the chat immediately
         const previewUrl = URL.createObjectURL(file);
-        setMessages(prev => [...prev, { role: 'user', text: '📷 Scanning this leaf for disease analysis...', image: previewUrl }]);
+        setMessages(prev => [...prev, { role: 'user', text: 'Scanning this leaf for disease analysis...', image: previewUrl }]);
         setIsAnalyzing(true);
         setAnalysis(null);
 
@@ -185,14 +185,14 @@ const AIPage = () => {
             if (!data.is_valid_plant) {
                 setMessages(prev => [...prev, { 
                     role: 'ai', 
-                    text: `🌿 **Not a Plant Image Detected**\n\n${data.advice}\n\nPlease upload a clear photo of a plant leaf or crop.` 
+                    text: `**Not a Plant Image Detected**\n\n${data.advice}\n\nPlease upload a clear photo of a plant leaf or crop.` 
                 }]);
             } else {
                 const isHealthy = data.diagnosis?.toLowerCase().includes('healthy');
                 const confText = data.confidence ? ` (Confidence: ${data.confidence}%)` : '';
                 setMessages(prev => [...prev, { 
                     role: 'ai', 
-                    text: `🔬 **Scan Result: ${data.diagnosis}**${confText}\n\n${data.advice}\n\n**Severity:** ${data.severity}\n**Organic Treatment:** ${isHealthy ? 'No treatment needed — your plant is healthy! Keep up the great work.' : 'See the side panel for complete organic treatment steps and safety precautions.'}` 
+                    text: `**Scan Result: ${data.diagnosis}**${confText}\n\n${data.advice}\n\n**Severity:** ${data.severity}\n**Organic Treatment:** ${isHealthy ? 'No treatment needed — your plant is healthy! Keep up the great work.' : 'See the side panel for complete organic treatment steps and safety precautions.'}` 
                 }]);
             }
         } catch (err) {
@@ -215,7 +215,7 @@ const AIPage = () => {
                             <div className="status-sub">{isTyping ? 'Thinking...' : 'Ready to help'}</div>
                         </div>
                     </div>
-                    {location && <div className="location-badge">📍 {location.lat.toFixed(2)}, {location.lng.toFixed(2)}</div>}
+                    {location && <div className="location-badge">{location.lat.toFixed(2)}, {location.lng.toFixed(2)}</div>}
                 </header>
 
                 <div className="chat-messages">
@@ -354,7 +354,7 @@ const AIPage = () => {
                                     {/* Precautions */}
                                     {analysis.precautions?.length > 0 && (
                                         <div className="advice-section" style={{ marginBottom: '10px' }}>
-                                            <p><strong>🌿 Organic Treatment Steps:</strong></p>
+                                            <p><strong>Organic Treatment Steps:</strong></p>
                                             <ul>
                                                 {analysis.precautions.map((p, i) => (
                                                     <li key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginBottom: '8px', paddingLeft: 0 }}>
@@ -374,7 +374,7 @@ const AIPage = () => {
                                     {/* Safety */}
                                     {analysis.safety_measures?.length > 0 && (
                                         <div className="advice-section highlight">
-                                            <p><strong>⚠️ Farmer Safety Measures:</strong></p>
+                                            <p><strong>Farmer Safety Measures:</strong></p>
                                             <ul>
                                                 {analysis.safety_measures.map((s, i) => (
                                                     <li key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginBottom: '8px', paddingLeft: 0 }}>

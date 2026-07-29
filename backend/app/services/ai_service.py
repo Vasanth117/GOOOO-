@@ -195,12 +195,10 @@ async def analyze_crop_health(image_data: bytes, user_query: Optional[str] = Non
     # first to confirm the image is actually a plant before letting YOLO classify it.
     is_plant = False
     plant_rejection_reason = "This does not appear to be a plant or leaf image."
-
     if not client:
         return _error_analysis(
             "AI verification service is offline. Cannot safely analyze the image."
         )
-
     base64_image = base64.b64encode(jpeg_data).decode('utf-8')
     try:
         validation = await client.chat.completions.create(
@@ -227,6 +225,7 @@ async def analyze_crop_health(image_data: bytes, user_query: Optional[str] = Non
             max_tokens=2000,
             temperature=0.1,
         )
+        
         v = json.loads(_clean_json_response(validation.choices[0].message.content))
         is_plant = v.get("is_plant", False)
         plant_rejection_reason = v.get("reason", plant_rejection_reason)
@@ -657,3 +656,62 @@ def _error_analysis(message: str):
         "confidence": 0,
         "is_valid_plant": False
     }
+
+
+async def get_market_insights(farm_profile: dict) -> dict:
+    """
+    Marketplace Agent (Chief Agricultural Economist)
+    Analyzes farmer's inventory, crop types, and location to provide autonomous economic planning,
+    B2B matchmaking strategies, and harvest optimization.
+    """
+    if not client:
+        return {
+            "agent_message": "**📈 The Market Agent:** System is offline, but I advise tracking local prices manually.",
+            "forecast": "Neutral",
+            "action_plan": ["Monitor local mandi prices", "List harvested crops manually"],
+            "projected_revenue": 0
+        }
+
+    system_prompt = (
+        "You are the GOO Marketplace Agent (Chief Agricultural Economist). "
+        "Your goal is to act as the farmer's personal financial planner, broker, and market analyst. "
+        "\n\nBased on the farmer's inventory, current crop types, and farm size, provide a highly detailed economic plan. "
+        "Include:"
+        "\n1. Price Forecasting & Scarcity analysis for their crops."
+        "\n2. Harvest timing optimization."
+        "\n3. B2B Direct Matchmaking suggestions (e.g. suggesting specific types of buyers like 'local vegan restaurants' or 'organic cosmetic brands')."
+        "\n4. A gamified trading tip involving GOO Tokens."
+        "\n\nSTRICT JSON FORMAT:"
+        "{"
+        "\n  \"agent_message\": \"Vibrant, in-character message starting with '**📈 The Market Agent:** '.\","
+        "\n  \"forecast\": \"Bullish/Bearish/Neutral for their primary crop\","
+        "\n  \"action_plan\": [\"Actionable step 1\", \"Actionable step 2\", \"Actionable step 3\"],"
+        "\n  \"projected_revenue_usd\": 1200,"
+        "\n  \"b2b_opportunities\": [\"Buyer type 1\", \"Buyer type 2\"]"
+        "\n}"
+    )
+
+    user_context = f"FARM PROFILE: {json.dumps(farm_profile, cls=MongoJSONEncoder)}"
+    
+    try:
+        response = await client.chat.completions.create(
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_context}
+            ],
+            model=TEXT_MODEL,
+            response_format={"type": "json_object"},
+            temperature=0.6
+        )
+        content = response.choices[0].message.content
+        data = json.loads(_clean_json_response(content))
+        return data
+    except Exception as e:
+        logger.error(f"Marketplace Agent Error: {e}")
+        return {
+            "agent_message": f"**📈 The Market Agent:** I'm currently unable to access the global economic database ({str(e)}). Keep holding your premium inventory!",
+            "forecast": "Unknown",
+            "action_plan": ["Hold inventory until connection is restored"],
+            "projected_revenue_usd": 0,
+            "b2b_opportunities": []
+        }

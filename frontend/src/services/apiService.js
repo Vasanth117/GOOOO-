@@ -202,6 +202,7 @@ export const apiService = {
         method: 'POST',
         body: JSON.stringify(data)
     }),
+    getMarketInsights: () => apiRequest('/ai/market-insights'),
 
     // ── Social & Community ──────────────────────────────────────
     getFeed: (page = 1, postType = '') => apiRequest(`/social/feed?page=${page}${postType ? `&post_type=${postType}` : ''}`),

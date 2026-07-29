@@ -73,3 +73,17 @@ async def weather_scan(
     )
     result = await ai_controller.get_advisor_advice(current_user, data)
     return success_response(result)
+
+
+@router.get("/market-insights", summary="Get autonomous economic planning from Market Agent")
+async def get_market_insights(
+    current_user: User = Depends(require_farmer)
+):
+    """
+    Analyzes farmer's inventory, crop types, and location to provide autonomous economic planning,
+    B2B matchmaking strategies, and harvest optimization.
+    """
+    result = await ai_controller.get_market_insights(current_user)
+    if "error" in result:
+        return error_response(result["error"], 404)
+    return success_response(result)

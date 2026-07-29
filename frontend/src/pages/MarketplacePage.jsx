@@ -11,7 +11,7 @@ import {
     ThumbsUp, Share2, Award, Clock, ClipboardList,
     PieChart, Activity, AlertCircle, HardDrive, Gift,
     Leaf as SproutIcon, Wind, Droplets, Loader2,
-    Mail, Lock, Globe
+    Mail, Lock, Globe, Target, Briefcase
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { apiService } from '../services/apiService';
@@ -57,6 +57,7 @@ const MarketplacePage = () => {
         { id: 2, title: 'New Review', msg: 'Anish left a 5-star rating.', time: '1h ago', read: true }
     ]);
     const [showNotifs, setShowNotifs] = useState(false);
+    const [marketInsights, setMarketInsights] = useState(null);
 
     const [sellerDash, setSellerDash] = useState({
         total_income: 0,
@@ -121,6 +122,12 @@ const MarketplacePage = () => {
             if (phase === 'seller') {
                 const dash = await apiService.getSellerDashboard();
                 setSellerDash(dash.data || dash);
+                try {
+                    const insights = await apiService.getMarketInsights();
+                    setMarketInsights(insights);
+                } catch (e) {
+                    console.error("Market Insights Error:", e);
+                }
             }
         } catch (err) {
             console.error("LayoutData Error:", err);
@@ -687,7 +694,7 @@ const MarketplacePage = () => {
                             <div style={{ display: 'flex', gap: '20px', marginTop: '20px' }}>
                                 <div className="revenue-card" style={{ flex: 2, padding: '30px', background: '#fff', border: '1px solid var(--color-border)', borderRadius: '24px' }}>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
-                                        <h3 style={{ fontSize: '1.4rem', fontWeight: 950 }}>Earnings & Profit Tracking 💰</h3>
+                                        <h3 style={{ fontSize: '1.4rem', fontWeight: 950 }}>Earnings & Profit Tracking</h3>
                                         <div style={{ display: 'flex', gap: '20px' }}>
                                             <div style={{ textAlign: 'right' }}>
                                                 <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#888' }}>TOTAL REVENUE</div>
@@ -734,11 +741,45 @@ const MarketplacePage = () => {
                                             </div>
                                         </div>
                                     ))}
-                                    {(!sellerDash || !sellerDash.recent_orders || sellerDash.recent_orders.length === 0) && (
+                                     {(!sellerDash || !sellerDash.recent_orders || sellerDash.recent_orders.length === 0) && (
                                         <p style={{ color: '#888', fontStyle: 'italic', padding: '10px 0' }}>No orders processed yet.</p>
                                     )}
                                 </div>
                             </div>
+                            
+                            {/* MARKETPLACE AGENT UI */}
+                            {marketInsights && (
+                                <div style={{ marginTop: '30px', padding: '30px', background: 'linear-gradient(135deg, #f0fdf4, #dcfce7)', borderRadius: '24px', border: '1px solid #bbf7d0', boxShadow: '0 10px 30px rgba(22,101,52,0.1)' }}>
+                                    <h3 style={{ fontSize: '1.5rem', fontWeight: 900, color: '#166534', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                        <Zap size={24} color="#15803d" /> AI Market Strategist
+                                    </h3>
+                                    <p style={{ color: '#15803d', fontSize: '1.1rem', marginTop: '15px', fontStyle: 'italic', fontWeight: 700 }}>
+                                        {marketInsights.agent_message}
+                                    </p>
+                                    
+                                    <div style={{ display: 'flex', gap: '20px', marginTop: '25px', flexWrap: 'wrap' }}>
+                                        <div style={{ flex: 1, background: '#fff', padding: '20px', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
+                                            <h4 style={{ color: '#1e293b', display: 'flex', alignItems: 'center', gap: '8px' }}><TrendingUp size={18} /> Forecast</h4>
+                                            <strong style={{ fontSize: '1.3rem', color: marketInsights.forecast === 'Bullish' ? '#10b981' : '#f59e0b', display: 'block', marginTop: '10px' }}>{marketInsights.forecast}</strong>
+                                            <p style={{ color: '#64748b', fontSize: '0.9rem', marginTop: '5px' }}>Projected B2B Revenue: <strong style={{ color: '#0f172a' }}>₹{marketInsights.projected_revenue_usd}</strong></p>
+                                        </div>
+                                        <div style={{ flex: 1, background: '#fff', padding: '20px', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
+                                            <h4 style={{ color: '#1e293b', display: 'flex', alignItems: 'center', gap: '8px' }}><Target size={18} /> Action Plan</h4>
+                                            <ul style={{ paddingLeft: '20px', marginTop: '10px', color: '#475569', fontSize: '0.9rem' }}>
+                                                {marketInsights.action_plan?.map((step, i) => <li key={i} style={{ marginBottom: '8px' }}>{step}</li>)}
+                                            </ul>
+                                        </div>
+                                        <div style={{ flex: 1, background: '#fff', padding: '20px', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
+                                            <h4 style={{ color: '#1e293b', display: 'flex', alignItems: 'center', gap: '8px' }}><Briefcase size={18} /> B2B Opportunities</h4>
+                                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '15px' }}>
+                                                {marketInsights.b2b_opportunities?.map((opp, i) => (
+                                                    <span key={i} style={{ background: '#f8fafc', border: '1px solid #cbd5e1', color: '#334155', padding: '6px 12px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 600 }}>{opp}</span>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     )}
                     {sellerTab === 'inventory' && (

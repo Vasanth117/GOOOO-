@@ -73,3 +73,15 @@ async def auto_verify_proof(image_data: bytes, mission_type: str) -> dict:
     """Public helper to verify proof images using AI."""
     # This is typically called by the proof_controller during submission
     return await ai_service.analyze_farming_proof(image_data, mission_type)
+
+
+async def get_market_insights(user: User) -> dict:
+    """Gets autonomous economic planning from the Market Agent."""
+    farm = await FarmProfile.find_one(FarmProfile.farmer_id == str(user.id))
+    if not farm:
+        return {"error": "Farm profile not found. Cannot provide market insights."}
+        
+    farm_ctx = jsonable_encoder(farm.model_dump(exclude={"id", "revision_id"}))
+    farm_ctx["id"] = str(farm.id)
+    
+    return await ai_service.get_market_insights(farm_ctx)

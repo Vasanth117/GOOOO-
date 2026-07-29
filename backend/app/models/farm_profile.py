@@ -69,6 +69,12 @@ class HistoryLog(BaseModel):
     note: Optional[str] = None
 
 
+class CropInventory(BaseModel):
+    crop: str
+    quantity_kg: float = 0.0
+    quality_grade: str = "A" # A, B, C
+    status: str = "growing" # growing, harvested, sold
+
 class FarmProfile(Document):
     farmer_id: str  # references User._id
     farm_name: str
@@ -83,6 +89,10 @@ class FarmProfile(Document):
     sustainability_score: int = 100
     history_logs: List[HistoryLog] = []
     last_checkin_at: Optional[datetime] = None
+    
+    # 📈 MARKET & INVENTORY FIELDS
+    inventory: List[CropInventory] = []
+    projected_harvest_date: Optional[datetime] = None
     
     # 🌍 SNAPPY MAP FIELDS
     live_lat: Optional[float] = None

@@ -7,7 +7,7 @@ import {
     ArrowUpRight, ArrowDownRight, MessageSquare, Tag,
     Image as ImageIcon, Award, ShieldCheck, AlertCircle,
     Loader2, MoreVertical, RefreshCw, ArrowRight,
-    Share2, Ticket
+    Share2, Ticket, Zap, Target, Briefcase
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { apiService } from '../../services/apiService';
@@ -54,6 +54,7 @@ const SellerDashboard = () => {
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [marketInsights, setMarketInsights] = useState(null);
 
     useEffect(() => {
         fetchDashboard();
@@ -65,6 +66,13 @@ const SellerDashboard = () => {
             const res = await apiService.getSellerDashboard();
             setStats(res);
             setError(null);
+            
+            try {
+                const insights = await apiService.getMarketInsights();
+                setMarketInsights(insights);
+            } catch (e) {
+                console.error("Failed to load market insights", e);
+            }
         } catch (err) {
             console.error(err);
             setError('Failed to load dashboard data');
@@ -255,7 +263,7 @@ const SellerDashboard = () => {
                             {/* Marketing Toolkit Section */}
                             <div className="card" style={{ padding: '40px', background: 'linear-gradient(135deg, #f4fdf4 0%, #fff 100%)', border: '1px solid #dcf7dc' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-                                    <h3 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 950, color: '#166534' }}>Grow Your Business 🚀</h3>
+                                    <h3 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 950, color: '#166534' }}>Grow Your Business</h3>
                                     <span style={{ fontSize: '0.9rem', fontWeight: 800, color: '#2d5a27' }}>GOO Marketing Suite</span>
                                 </div>
                                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px' }}>
@@ -279,6 +287,73 @@ const SellerDashboard = () => {
                                     </div>
                                 </div>
                             </div>
+                            
+                            {/* MARKETPLACE AGENT UI */}
+                            {marketInsights && (
+                                <div className="card" style={{ padding: '40px', background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)', border: '1px solid #e2e8f0' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                                        <h3 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 950, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                            <Zap size={28} color="#2563eb" /> AI Market Strategist
+                                        </h3>
+                                        <span style={{ fontSize: '0.9rem', fontWeight: 800, color: '#3b82f6', background: '#dbeafe', padding: '6px 12px', borderRadius: '12px' }}>Chief Agricultural Economist</span>
+                                    </div>
+                                    
+                                    <div style={{ 
+                                        background: '#dbeafe', 
+                                        borderLeft: '4px solid #3b82f6', 
+                                        padding: '16px 20px', 
+                                        borderRadius: '0 12px 12px 0', 
+                                        marginBottom: '24px',
+                                        color: '#1e3a8a',
+                                        fontSize: '1.05rem',
+                                        fontWeight: 600,
+                                        lineHeight: 1.6,
+                                        display: 'flex',
+                                        alignItems: 'flex-start',
+                                        gap: '12px'
+                                    }}>
+                                        <div style={{ background: '#fff', padding: '6px', borderRadius: '50%', display: 'flex' }}>
+                                            <Zap size={20} color="#2563eb" />
+                                        </div>
+                                        <div style={{ marginTop: '4px' }}>
+                                            {marketInsights.agent_message.replace(/\*\*/g, '').replace(/"/g, '')}
+                                        </div>
+                                    </div>
+                                    
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px' }}>
+                                        <div style={{ padding: '25px', background: '#fff', borderRadius: '24px', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column' }}>
+                                            <div style={{ color: (typeof marketInsights.forecast === 'string' ? marketInsights.forecast : marketInsights.forecast?.price_trend) === 'Bullish' ? '#10b981' : '#f59e0b', marginBottom: '12px' }}><TrendingUp size={28} /></div>
+                                            <div style={{ fontWeight: 900, fontSize: '1rem', marginBottom: '8px' }}>Price Forecast</div>
+                                            <p style={{ fontSize: '1.4rem', fontWeight: 950, color: (typeof marketInsights.forecast === 'string' ? marketInsights.forecast : marketInsights.forecast?.price_trend) === 'Bullish' ? '#10b981' : '#f59e0b' }}>
+                                                {typeof marketInsights.forecast === 'string' ? marketInsights.forecast : (marketInsights.forecast?.price_trend || 'Unknown')}
+                                            </p>
+                                            <div style={{ marginTop: 'auto', paddingTop: '15px', borderTop: '1px solid #f1f5f9', fontSize: '0.85rem', color: '#64748b' }}>
+                                                Projected Revenue: <strong style={{ color: '#0f172a' }}>₹{typeof marketInsights.projected_revenue_usd === 'object' ? JSON.stringify(marketInsights.projected_revenue_usd) : marketInsights.projected_revenue_usd}</strong>
+                                            </div>
+                                        </div>
+                                        
+                                        <div style={{ padding: '25px', background: '#fff', borderRadius: '24px', border: '1px solid #e2e8f0' }}>
+                                            <div style={{ color: '#8b5cf6', marginBottom: '12px' }}><Target size={28} /></div>
+                                            <div style={{ fontWeight: 900, fontSize: '1rem', marginBottom: '12px' }}>Action Plan</div>
+                                            <ul style={{ paddingLeft: '16px', margin: 0, color: '#475569', fontSize: '0.85rem', lineHeight: 1.6, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                                {Array.isArray(marketInsights.action_plan) ? marketInsights.action_plan.map((step, i) => <li key={i}>{typeof step === 'string' ? step : JSON.stringify(step)}</li>) : <li>{String(marketInsights.action_plan)}</li>}
+                                            </ul>
+                                        </div>
+                                        
+                                        <div style={{ padding: '25px', background: '#fff', borderRadius: '24px', border: '1px solid #e2e8f0' }}>
+                                            <div style={{ color: '#ec4899', marginBottom: '12px' }}><Briefcase size={28} /></div>
+                                            <div style={{ fontWeight: 900, fontSize: '1rem', marginBottom: '12px' }}>B2B Matches</div>
+                                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                                                {Array.isArray(marketInsights.b2b_opportunities) && marketInsights.b2b_opportunities.map((opp, i) => (
+                                                    <span key={i} style={{ background: '#fdf2f8', color: '#db2777', border: '1px solid #fbcfe8', padding: '6px 12px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 800 }}>
+                                                        {typeof opp === 'string' ? opp : JSON.stringify(opp)}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     )}
 
@@ -293,7 +368,7 @@ const SellerDashboard = () => {
                     {activeTab === 'reviews' && (
                         <div className="card" style={{ padding: '32px' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '30px' }}>
-                                <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 950 }}>Customer Feedback 💬</h2>
+                                <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 950 }}>Customer Feedback</h2>
                                 <div style={{ background: '#fef3c7', color: '#d4af37', padding: '8px 15px', borderRadius: '10px', fontSize: '0.9rem', fontWeight: 900 }}>4.8 ★ Store Average</div>
                             </div>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>

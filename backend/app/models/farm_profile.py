@@ -17,6 +17,7 @@ class SoilType(str, Enum):
     LOAMY = "loamy"
     SILT = "silt"
     PEAT = "peat"
+    PEATY = "peaty"
     CHALK = "chalk"
     CHALKY = "chalky"
     BLACK_COTTON = "black cotton"

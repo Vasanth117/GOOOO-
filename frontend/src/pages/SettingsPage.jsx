@@ -23,7 +23,7 @@ const SETTINGS_SECTIONS = [
     { id: 'support', label: 'Help & About', icon: LifeBuoy },
 ];
 
-const API_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:8000').replace('/api/v1', '');
+const API_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:8001').replace('/api/v1', '');
 
 const SettingsPage = () => {
     const { user, refreshUser, logout } = useAuth();

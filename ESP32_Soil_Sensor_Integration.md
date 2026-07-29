@@ -122,7 +122,7 @@ void loop() {
   }
   
   // Wait 30 minutes before next reading (or use Deep Sleep for battery saving)
-  delay(1800000); 
+  delay(1800100); 
 }
 ```
 

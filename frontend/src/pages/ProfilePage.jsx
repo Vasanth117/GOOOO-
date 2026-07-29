@@ -22,7 +22,7 @@ const TABS = [
     { id: 'Achievements', icon: Trophy, label: 'Achievements' },
     { id: 'Analytics', icon: BarChart2, label: 'Analytics' },
 ];
-const API_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:8000').replace('/api/v1', '');
+const API_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:8001').replace('/api/v1', '');
 
 const ProfilePage = () => {
     const { userId } = useParams();

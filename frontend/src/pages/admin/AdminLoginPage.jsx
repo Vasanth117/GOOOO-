@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-const ADMIN_API = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
+const ADMIN_API = import.meta.env.VITE_API_URL || 'http://localhost:8001/api/v1';
 
 const AdminLoginPage = () => {
     const [email, setEmail] = useState('admin@goo.farm');

@@ -41,7 +41,7 @@ if __name__ == "__main__":
 
     print("\n✅ Both services are starting!")
     print("👉 Frontend: http://localhost:5173")
-    print("👉 Backend:  http://localhost:8000\n")
+    print("👉 Backend:  http://localhost:8001\n")
     print("Press Ctrl+C to stop both services.\n")
 
     try:

@@ -136,8 +136,8 @@ E:\GOO\
 
 ## 🔌 API ENDPOINTS
 
-Base URL: `http://localhost:8000/api/v1`  
-Interactive Docs: `http://localhost:8000/docs`
+Base URL: `http://localhost:8001/api/v1`  
+Interactive Docs: `http://localhost:8001/docs`
 
 ### 🔐 AUTH — `/api/v1/auth`
 
@@ -315,10 +315,10 @@ npm run dev
 ### Server URLs
 | URL | Description |
 |---|---|
-| `http://localhost:8000` | API root / health check |
-| `http://localhost:8000/docs` | Swagger UI (interactive API docs) |
-| `http://localhost:8000/redoc` | ReDoc API docs |
-| `http://localhost:8000/health` | Health check endpoint |
+| `http://localhost:8001` | API root / health check |
+| `http://localhost:8001/docs` | Swagger UI (interactive API docs) |
+| `http://localhost:8001/redoc` | ReDoc API docs |
+| `http://localhost:8001/health` | Health check endpoint |
 
 ---
 

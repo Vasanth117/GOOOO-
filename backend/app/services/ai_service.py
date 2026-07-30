@@ -225,7 +225,7 @@ async def analyze_crop_health(image_data: bytes, user_query: Optional[str] = Non
             max_tokens=2000,
             temperature=0.1,
         )
-        
+
         v = json.loads(_clean_json_response(validation.choices[0].message.content))
         is_plant = v.get("is_plant", False)
         plant_rejection_reason = v.get("reason", plant_rejection_reason)
@@ -709,7 +709,7 @@ async def get_market_insights(farm_profile: dict) -> dict:
     except Exception as e:
         logger.error(f"Marketplace Agent Error: {e}")
         return {
-            "agent_message": f"**📈 The Market Agent:** I'm currently unable to access the global economic database ({str(e)}). Keep holding your premium inventory!",
+            "agent_message": f"**The Market Agent:** I'm currently unable to access the global economic database ({str(e)}). Keep holding your premium inventory!",
             "forecast": "Unknown",
             "action_plan": ["Hold inventory until connection is restored"],
             "projected_revenue_usd": 0,

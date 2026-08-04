@@ -20,3 +20,4 @@ from .verification import Verification, VerificationStatus
 from .grc_member import GRCMember
 from .refresh_token import RefreshToken
 from .chat import ChatMessage
+from .sensor_data import SensorData

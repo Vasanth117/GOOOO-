@@ -106,7 +106,7 @@ export const ProofsTab = () => {
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
 
-    const baseUrl = (import.meta.env.VITE_API_URL || 'http://localhost:8001/api/v1').replace('/api/v1', '');
+    const baseUrl = (import.meta.env.VITE_API_URL || 'http://127.0.0.1:8001/api/v1').replace('/api/v1', '');
 
     useEffect(() => {
         adminFetch('/admin/proofs?status=pending_review&limit=50')
@@ -207,3 +207,4 @@ export const ProofsTab = () => {
         </div>
     );
 };
+

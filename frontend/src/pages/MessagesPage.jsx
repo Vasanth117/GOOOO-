@@ -12,7 +12,7 @@ import { useNavigate } from 'react-router-dom';
 const MessagesPage = () => {
     const { user } = useAuth();
     const navigate = useNavigate();
-    const baseUrl = (import.meta.env.VITE_API_URL || 'http://localhost:8001').replace('/api/v1', '');
+    const baseUrl = (import.meta.env.VITE_API_URL || 'http://127.0.0.1:8001').replace('/api/v1', '');
     const [chats, setChats] = useState([]);
     const [activeChat, setActiveChat] = useState(null);
     const [messages, setMessages] = useState([]);
@@ -43,7 +43,7 @@ const MessagesPage = () => {
         if (!user) return;
         
         const wsProto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const apiHost = (import.meta.env.VITE_API_URL || 'http://localhost:8001').replace('http://', '').replace('https://', '');
+        const apiHost = (import.meta.env.VITE_API_URL || 'http://127.0.0.1:8001').replace('http://', '').replace('https://', '');
         const socket = new WebSocket(`${wsProto}//${apiHost}/messages/ws/${user.id}`);
         
         socket.onopen = () => console.log('WebSocket Connected');
@@ -399,3 +399,4 @@ const MessagesPage = () => {
 };
 
 export default MessagesPage;
+

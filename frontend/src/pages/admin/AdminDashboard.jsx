@@ -78,7 +78,7 @@ const UserDetailModal = ({ user, onClose }) => {
         { id: 'actions', label: 'Actions' },
     ];
 
-    const baseUrl = (import.meta.env.VITE_API_URL || 'http://localhost:8001/api/v1').replace('/api/v1', '');
+    const baseUrl = (import.meta.env.VITE_API_URL || 'http://127.0.0.1:8001/api/v1').replace('/api/v1', '');
 
     return (
         <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }} onClick={onClose}>
@@ -397,3 +397,4 @@ const AdminDashboard = () => {
 };
 
 export default AdminDashboard;
+

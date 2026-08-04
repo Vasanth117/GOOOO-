@@ -10,7 +10,7 @@ import { apiService } from '../services/apiService';
 import { useAuth } from '../context/AuthContext';
 import './dashboard.css';
 
-const API_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:8001').replace('/api/v1', '');
+const API_BASE = (import.meta.env.VITE_API_URL || 'http://127.0.0.1:8001').replace('/api/v1', '');
 
 const PostCard = ({ post, onPostDeleted }) => {
     const { user } = useAuth();
@@ -426,3 +426,4 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
+

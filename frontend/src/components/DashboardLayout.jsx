@@ -81,7 +81,7 @@ const DashboardLayout = () => {
         if (!user?.id) return;
 
         const token = localStorage.getItem('access_token');
-        const baseUrl = (import.meta.env.VITE_API_URL || 'http://localhost:8001').replace('/api/v1', '');
+        const baseUrl = (import.meta.env.VITE_API_URL || 'http://127.0.0.1:8001').replace('/api/v1', '');
         const wsUrl = baseUrl.replace('http', 'ws');
         const socket = new WebSocket(`${wsUrl}/api/v1/messages/ws/${user.id}`);
         
@@ -324,7 +324,7 @@ const DashboardLayout = () => {
                                                     >
                                                         <div style={{ width: 40, height: 40, borderRadius: '50%', overflow: 'hidden', background: '#eee' }}>
                                                             {u.profile_picture ? (
-                                                                <img src={u.profile_picture.startsWith('http') ? u.profile_picture : `${(import.meta.env.VITE_API_URL || 'http://localhost:8001').replace('/api/v1', '')}${u.profile_picture}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                                <img src={u.profile_picture.startsWith('http') ? u.profile_picture : `${(import.meta.env.VITE_API_URL || 'http://127.0.0.1:8001').replace('/api/v1', '')}${u.profile_picture}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                                             ) : (
                                                                 <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#2d5a27', color: 'white', fontWeight: 900 }}>{u.name[0]}</div>
                                                             )}
@@ -438,7 +438,7 @@ const DashboardLayout = () => {
                         >
                             {user?.profile_picture ? (
                                 <img 
-                                    src={user.profile_picture.startsWith('http') ? user.profile_picture : `${(import.meta.env.VITE_API_URL || 'http://localhost:8001').replace('/api/v1', '')}${user.profile_picture}`} 
+                                    src={user.profile_picture.startsWith('http') ? user.profile_picture : `${(import.meta.env.VITE_API_URL || 'http://127.0.0.1:8001').replace('/api/v1', '')}${user.profile_picture}`} 
                                     alt="me" 
                                     style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                                     onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}
@@ -472,3 +472,4 @@ const DashboardLayout = () => {
 };
 
 export default DashboardLayout;
+

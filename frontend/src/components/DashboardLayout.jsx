@@ -7,7 +7,7 @@ import {
     Home, Leaf, Trophy, ShoppingBag, Users, Map, Brain,
     Bell, MessageCircle, Search, Settings, LogOut, Award,
     Heart, MessageSquare, Globe, Target, LayoutDashboard,
-    Bot, Image, ShoppingCart, User, Gift, Ticket, Camera, Loader2, Menu
+    Bot, Image, ShoppingCart, User, Gift, Ticket, Camera, Loader2, Menu, Cpu
 } from 'lucide-react';
 import logo from '../assets/images/logo.png';
 
@@ -36,6 +36,7 @@ const TOPBAR_TITLES = {
     '/messages':    { icon: MessageCircle,   title: 'Direct Messages',     sub: 'Private conversations with farmers' },
     '/settings':    { icon: Settings,        title: 'Settings',            sub: 'Manage your account & preferences' },
     '/profile':     { icon: User,            title: 'Your Profile',        sub: 'Manage your farming identity' },
+    '/hardware':    { icon: Cpu,             title: 'Hardware Monitor',    sub: 'Real-time telemetry from farm sensors' },
 };
 
 const DashboardLayout = () => {
@@ -340,6 +341,15 @@ const DashboardLayout = () => {
                                     </>
                                 )}
                             </AnimatePresence>
+                        </div>
+
+                        {/* Hardware Sensors */}
+                        <div 
+                            style={{ cursor: 'pointer', padding: 8, borderRadius: 12, transition: '0.2s', background: currentPath === '/hardware' ? '#f4fdf4' : 'transparent' }}
+                            onClick={() => navigate('/hardware')}
+                            title="Hardware Sensors Data"
+                        >
+                            <Cpu size={20} color={currentPath === '/hardware' ? '#2d5a27' : 'currentColor'} />
                         </div>
 
                         {/* Notifications */}

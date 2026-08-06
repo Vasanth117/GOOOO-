@@ -1,34 +1,54 @@
 #include <WiFi.h>
 #include <HTTPClient.h>
 #include <DHT.h>
+#include <vector>
 
-// --- WIFI CONFIGURATION ---
-// IMPORTANT: ESP32 requires a 2.4GHz network. Make sure 'Maximise Compatibility' is ON in your iPhone settings!
-// IMPORTANT: ESP32 requires a 2.4GHz network. Make sure 'Maximise Compatibility' is ON in your iPhone settings!
+// WIFI CONFIGURATION 
 const char* ssid = "VASANTH"; 
 const char* password = "Vasanthvee07";
 
-// --- BACKEND CONFIGURATION ---
-// IMPORTANT: Replace this IP with the local IP address of the computer running your FastAPI backend
-// You can find it by typing 'ipconfig' (Windows) or 'ifconfig' (Mac/Linux) in your terminal.
-const char* serverName = "http://172.20.10.3:8000/api/v1/hardware/telemetry"; 
+// BACKEND CONFIGURATION 
+// Adjust the backend IP to your network setup.
+const char* serverName = "http://172.20.10.3:8001/api/v1/hardware/telemetry"; 
 const char* hardwareSecret = "GOO_HARDWARE_SECRET";
-const char* farmProfileId = "REPLACE_WITH_YOUR_FARM_PROFILE_ID"; // Get this from your MongoDB database (e.g. 64d9f7...)
+const char* farmProfileId = "000000000000000000000000"; 
 
-// --- SENSOR PINS ---
+// SENSOR PINS
 const int MOISTURE_PIN = 34; // Capacitive Soil Moisture Sensor (Analog Pin)
-const int DHT_PIN = 4;       // DHT11 or DHT22 Data Pin (Digital Pin)
-#define DHTTYPE DHT22        // Change to DHT11 if using DHT11
+const int DHT_PIN = 4;       // DHT22 Data Pin
+const int BUZZER_PIN = 5;    // Buzzer Pin (Change if connected to another GPIO)
+#define DHTTYPE DHT22        // White sensor = DHT22
 
 DHT dht(DHT_PIN, DHTTYPE);
+
+// Non-blocking timers
+unsigned long previousDataMillis = 0;
+const long dataInterval = 3000; // Update every 3 seconds
+
+unsigned long buzzerStartMillis = 0;
+bool isBuzzerOn = false;
+const long buzzerDuration = 10000; // Buzzer sounds for 10 seconds
+
+// Passive Buzzer Oscillation
+unsigned long lastBuzzerToggle = 0;
+bool buzzerPinState = HIGH;
+
+// Buffer for unsent readings
+struct SensorReading {
+  float moisture;
+  float temperature;
+  float humidity;
+};
+std::vector<SensorReading> readingBuffer;
 
 void setup() {
   Serial.begin(115200);
   
-  // Initialize DHT sensor
+  pinMode(BUZZER_PIN, OUTPUT);
+  digitalWrite(BUZZER_PIN, HIGH); // HIGH = OFF for Low-Level Trigger buzzer
+  
   dht.begin();
   
-  // Connect to Wi-Fi
   Serial.print("Connecting to WiFi: ");
   Serial.println(ssid);
   WiFi.begin(ssid, password);
@@ -38,70 +58,94 @@ void setup() {
     Serial.print(".");
   }
   
-  Serial.println("");
-  Serial.println("WiFi Connected!");
+  Serial.println("\nWiFi Connected!");
   Serial.print("IP Address: ");
   Serial.println(WiFi.localIP());
 }
 
 void loop() {
-  if(WiFi.status() == WL_CONNECTED){
-    HTTPClient http;
-    http.begin(serverName);
-    http.addHeader("Content-Type", "application/json");
-    
-    // --- 1. READ SOIL MOISTURE ---
-    // The ESP32 ADC reads 0-4095. Usually, higher value means drier for capacitive sensors.
-    // You might need to calibrate these values:
-    int airValue = 3500;   // Read this when the sensor is completely dry in the air
-    int waterValue = 1500; // Read this when the sensor is submerged in water
-    
+  unsigned long currentMillis = millis();
+
+  // 1. NON-BLOCKING BUZZER LOGIC
+  if (isBuzzerOn) {
+    if (currentMillis - buzzerStartMillis >= buzzerDuration) {
+      digitalWrite(BUZZER_PIN, HIGH); // HIGH = OFF
+      isBuzzerOn = false;
+      Serial.println("Buzzer turned OFF after 10 seconds.");
+    } else {
+      // Create a sound wave (beep) for Passive Buzzers by rapidly turning it ON and OFF every 1 millisecond (500Hz tone)
+      if (currentMillis - lastBuzzerToggle >= 1) {
+        lastBuzzerToggle = currentMillis;
+        buzzerPinState = !buzzerPinState;
+        digitalWrite(BUZZER_PIN, buzzerPinState ? HIGH : LOW);
+      }
+    }
+  }
+
+  // 2. NON-BLOCKING SENSOR READ & SEND LOGIC (Every 3 seconds)
+  if (currentMillis - previousDataMillis >= dataInterval) {
+    previousDataMillis = currentMillis;
+
+    // READ SENSORS
+    int airValue = 3500;   
+    int waterValue = 1500; 
     int sensorValue = analogRead(MOISTURE_PIN);
     float moisturePercent = map(sensorValue, airValue, waterValue, 0, 100); 
     
-    // Clamp values between 0 and 100
     if(moisturePercent > 100) moisturePercent = 100;
     if(moisturePercent < 0) moisturePercent = 0;
     
-    // --- 2. READ DHT SENSOR (TEMP & HUMIDITY) ---
     float humidity = dht.readHumidity();
-    float temperature = dht.readTemperature(); // Celsius
+    float temperature = dht.readTemperature(); 
     
-    // Check if any reads failed and exit early (to try again).
     if (isnan(humidity) || isnan(temperature)) {
-      Serial.println(F("Failed to read from DHT sensor!"));
-      delay(2000);
-      return;
+      Serial.println("Failed to read from DHT sensor! Retrying next cycle.");
+      return; // Skip this cycle
     }
     
     Serial.printf("Moisture: %.2f%% | Temp: %.2fC | Humidity: %.2f%%\n", moisturePercent, temperature, humidity);
     
-    // --- 3. CREATE JSON PAYLOAD ---
-    String httpRequestData = "{\"farm_profile_id\": \"" + String(farmProfileId) + "\", " +
-                             "\"moisture_percent\": " + String(moisturePercent) + ", " +
-                             "\"temperature_c\": " + String(temperature) + ", " +
-                             "\"humidity_percent\": " + String(humidity) + ", " +
-                             "\"secret_key\": \"" + String(hardwareSecret) + "\"}";
-                             
-    Serial.println("Sending Data:");
-    Serial.println(httpRequestData);
-    
-    // --- 4. SEND POST REQUEST ---
-    int httpResponseCode = http.POST(httpRequestData);
-    Serial.print("HTTP Response code: ");
-    Serial.println(httpResponseCode);
-    
-    if (httpResponseCode > 0) {
-      String response = http.getString();
-      Serial.println(response);
+    // Check if any sensor exceeds 80% (or temp > 40C) to trigger Buzzer
+    if ((moisturePercent > 80.0 || humidity > 80.0 || temperature > 40.0) && !isBuzzerOn) {
+      digitalWrite(BUZZER_PIN, LOW); // LOW = ON for Low-Level Trigger buzzer
+      isBuzzerOn = true;
+      buzzerStartMillis = currentMillis;
+      Serial.println("ALERT! Sensor exceeded 80% limit. Buzzer activated for 10s.");
     }
     
-    http.end();
-  } else {
-    Serial.println("WiFi Disconnected. Waiting to reconnect...");
+    SensorReading currentReading = {moisturePercent, temperature, humidity};
+    
+    if(WiFi.status() == WL_CONNECTED) {
+      HTTPClient http;
+      http.begin(serverName);
+      http.addHeader("Content-Type", "application/json");
+      
+      String httpRequestData = "{\"farm_profile_id\": \"" + String(farmProfileId) + "\", " +
+                               "\"moisture_percent\": " + String(currentReading.moisture) + ", " +
+                               "\"temperature_c\": " + String(currentReading.temperature) + ", " +
+                               "\"humidity_percent\": " + String(currentReading.humidity) + ", " +
+                               "\"secret_key\": \"" + String(hardwareSecret) + "\"}";
+                               
+      int httpResponseCode = http.POST(httpRequestData);
+      
+      if (httpResponseCode > 0) {
+        Serial.print("HTTP Response code: ");
+        Serial.println(httpResponseCode);
+        readingBuffer.clear();
+      } else {
+        Serial.print("Error code: ");
+        Serial.println(httpResponseCode);
+        if (readingBuffer.size() < 100) {
+          readingBuffer.push_back(currentReading);
+        }
+      }
+      http.end();
+    } else {
+      Serial.println("WiFi Disconnected. Waiting to reconnect and buffering data...");
+      if (readingBuffer.size() < 100) {
+        readingBuffer.push_back(currentReading);
+      }
+      WiFi.reconnect();
+    }
   }
-  
-  // Wait 1 minute before next reading 
-  // (In production, consider 10-30 minutes and using ESP32 deep sleep)
-  delay(60000); 
 }

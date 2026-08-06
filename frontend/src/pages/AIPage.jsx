@@ -40,9 +40,11 @@ const QUICK_ACTIONS = [
 
 import { apiService } from '../services/apiService';
 import { useAuth } from '../context/AuthContext';
+import { useLocation } from 'react-router-dom';
 
 const AIPage = () => {
     const { user } = useAuth();
+    const locationRouter = useLocation();
     const [messages, setMessages] = useState([]);
     const [onboardingStep, setOnboardingStep] = useState(0); // 0: detecting location, 1: asking farm size, 2: asking soil type, 3: completed
     
@@ -56,6 +58,7 @@ const AIPage = () => {
     const chatEndRef = useRef(null);
     const audioRef = useRef(new Audio());
     const fileInputRef = useRef(null);
+    const hasTriggeredHardwareAdvisory = useRef(false);
 
     // ── AUTO LOCATION ──
     const [location, setLocation] = useState(null);
@@ -94,6 +97,25 @@ const AIPage = () => {
         };
         detect();
     }, [user?.name]);
+
+    useEffect(() => {
+        if (locationRouter.state?.hardwareData && !hasTriggeredHardwareAdvisory.current) {
+            hasTriggeredHardwareAdvisory.current = true;
+            const data = locationRouter.state.hardwareData;
+            
+            // Format the sensor data into a prompt
+            let query = `My farm sensors currently read: Temperature: ${data.temperature || '--'}°C, Humidity: ${data.humidity || '--'}%, Soil Moisture: ${data.soilMoisture || '--'}%. `;
+            if (data.temperature > 40 || data.humidity > 80 || data.soilMoisture > 80) {
+                query += "Some values are quite high. ";
+            }
+            query += "Can you provide a quick agronomy advisory based on this real-time data?";
+            
+            // Delay slightly to ensure UI is ready
+            setTimeout(() => {
+                handleSend(null, query);
+            }, 500);
+        }
+    }, [locationRouter.state]);
 
     const scrollToBottom = () => {
         chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });

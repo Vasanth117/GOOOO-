@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -235,3 +235,22 @@ async def root():
 @app.get("/health", tags=["Health"])
 async def health():
     return {"status": "healthy", "env": settings.APP_ENV}
+
+# ─── WEBSOCKET ENDPOINT ───────────────────────────────────────
+from app.websocket import manager
+
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    await manager.connect(websocket)
+    try:
+        while True:
+            # We don't necessarily expect data from clients, but we need to wait for disconnects
+            # Client might send "ping" to keep connection alive
+            data = await websocket.receive_text()
+            if data == "ping":
+                await websocket.send_text("pong")
+    except WebSocketDisconnect:
+        manager.disconnect(websocket)
+    except Exception as e:
+        logger.error(f"WebSocket error: {e}")
+        manager.disconnect(websocket)

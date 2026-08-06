@@ -260,6 +260,10 @@ export const apiService = {
     updateOrderStatus: (id, status) => apiRequest(`/marketplace/orders/${id}/status?status=${status}`, { method: 'PATCH' }),
     getReviews: (productId) => apiRequest(`/marketplace/products/${productId}/reviews`),
     replyToReview: (reviewId, reply) => apiRequest(`/marketplace/reviews/${reviewId}/reply`, { method: 'POST', body: JSON.stringify({ reply }) }),
+    
+    // Hardware
+    getTelemetry: (farmProfileId, limit = 10) => apiRequest(`/hardware/telemetry/${farmProfileId}?limit=${limit}`),
+
     // Notifications
     getNotifications: () => apiRequest('/notifications/'),
     markNotificationRead: (id) => apiRequest(`/notifications/${id}/read`, { method: 'PATCH' }),

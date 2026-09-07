@@ -1,3 +1,5 @@
+#include <Adafruit_Sensor.h>
+
 #include <WiFi.h>
 #include <HTTPClient.h>
 #include <DHT.h>
@@ -11,7 +13,7 @@ const char* password = "Vasanthvee07";
 // --- BACKEND CONFIGURATION ---
 // IMPORTANT: Replace this IP with the local IP address of the computer running your FastAPI backend
 // You can find it by typing 'ipconfig' (Windows) or 'ifconfig' (Mac/Linux) in your terminal.
-const char* serverName = "http://172.20.10.3:8000/api/v1/hardware/telemetry"; 
+const char* serverName = "http://172.20.10.2:8000/api/v1/hardware/telemetry"; 
 const char* hardwareSecret = "GOO_HARDWARE_SECRET";
 const char* farmProfileId = "REPLACE_WITH_YOUR_FARM_PROFILE_ID"; // Get this from your MongoDB database (e.g. 64d9f7...)
 

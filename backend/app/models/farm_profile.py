@@ -49,6 +49,7 @@ from pydantic import BaseModel
 class Location(BaseModel):
     latitude: float
     longitude: float
+    name: Optional[str] = None
 
 
 class FertilizerUsage(BaseModel):

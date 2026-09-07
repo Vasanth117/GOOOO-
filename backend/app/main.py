@@ -95,10 +95,13 @@ app = FastAPI(
 # Combine settings origins with standard local dev origins
 ALLOWED_ORIGINS = settings.allowed_origins_list + [
     "http://localhost:3000",
+    "http://localhost:3001",
     "http://localhost:5173",
     "http://127.0.0.1:3000",
+    "http://127.0.0.1:3001",
     "http://127.0.0.1:5173",
     "http://172.17.6.240:3000",
+    "http://172.17.6.240:3001",
     "http://172.17.6.240:5173",
     "https://frontend-two-zeta-85.vercel.app",
     "https://frontend-two-zeta-85-vasanth117s-projects.vercel.app",
@@ -108,7 +111,7 @@ ALLOWED_ORIGINS = settings.allowed_origins_list + [
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
-    allow_origin_regex="https://.*\\.vercel\\.app",
+    allow_origin_regex=r"https://.*\.vercel\.app|http://(localhost|127\.0\.0\.1|172\.17\.6\.240):[0-9]+",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

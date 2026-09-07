@@ -105,17 +105,44 @@ async def get_mission_detail(mission_progress_id: str, user: User) -> dict:
 async def start_mission(mission_progress_id: str, user: User) -> dict:
     """Mark a mission as in-progress."""
     mp = await MissionProgress.get(mission_progress_id)
+
+    # Fallback 1: Check if the ID provided matches a MissionProgress by farmer_id + mission_id
+    if not mp:
+        mp = await MissionProgress.find_one(
+            MissionProgress.farmer_id == str(user.id),
+            MissionProgress.mission_id == mission_progress_id
+        )
+
+    # Fallback 2: If passed a Mission template ID, initialize MissionProgress for this farmer
+    if not mp:
+        mission = await Mission.get(mission_progress_id)
+        if mission:
+            duration = mission.duration_hours or 24
+            mp = MissionProgress(
+                farmer_id=str(user.id),
+                mission_id=str(mission.id),
+                status=MissionStatus.ACTIVE,
+                expires_at=datetime.utcnow() + timedelta(hours=duration)
+            )
+            await mp.insert()
+
     if not mp or mp.farmer_id != str(user.id):
         not_found("Mission")
 
-    if mp.status != MissionStatus.ACTIVE:
+    # Idempotency check: If already in progress, return enriched record gracefully
+    if mp.status == MissionStatus.IN_PROGRESS:
+        return await _enrich_progress(mp)
+
+    if mp.status not in [MissionStatus.ACTIVE, MissionStatus.IN_PROGRESS]:
         error_response(f"Mission cannot be started (current status: {mp.status.value})", 400)
 
+    # If expired, auto-extend by 7 days to allow farmer to complete it
     if mp.expires_at < datetime.utcnow():
-        error_response("Mission has already expired", 400)
+        mp.expires_at = datetime.utcnow() + timedelta(days=7)
 
     mp.status = MissionStatus.IN_PROGRESS
-    mp.started_at = datetime.utcnow()
+    if not mp.started_at:
+        mp.started_at = datetime.utcnow()
     await mp.save()
 
     return await _enrich_progress(mp)

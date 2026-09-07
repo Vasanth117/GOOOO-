@@ -14,7 +14,7 @@ class Settings(BaseSettings):
 
     # Server
     HOST: str = "127.0.0.1"
-    PORT: int = 8001
+    PORT: int = 8002
 
     # Database
     MONGODB_URL: str = "mongodb://localhost:27017"
@@ -23,12 +23,14 @@ class Settings(BaseSettings):
     # JWT
     JWT_SECRET_KEY: str = "change-this-secret-in-production"
     JWT_ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
     # AI
     GEMINI_API_KEY: str = ""
     GROQ_API_KEY: str = ""
+    GROQ_TEXT_MODEL: str = "openai/gpt-oss-120b"
+    GROQ_VISION_MODEL: str = "qwen/qwen3.8-27b"
     ELEVENLABS_API_KEY: str = ""
 
     # Weather
@@ -43,7 +45,7 @@ class Settings(BaseSettings):
     CLOUDINARY_URL: str = ""
 
     # CORS
-    ALLOWED_ORIGINS: str = "http://localhost:3000,http://localhost:5173"
+    ALLOWED_ORIGINS: str = "http://localhost:3000,http://localhost:3001,http://127.0.0.1:3000,http://127.0.0.1:3001,http://localhost:5173"
 
     # Rate Limiting
     RATE_LIMIT_PER_MINUTE: int = 60

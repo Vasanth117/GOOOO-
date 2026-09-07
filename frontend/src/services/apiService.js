@@ -179,14 +179,10 @@ export const apiService = {
         method: 'POST',
         body: JSON.stringify({ message, context })
     }),
-    analyzeCropHealth: (formData) => {
-        const token = localStorage.getItem('access_token');
-        return fetch(`${BASE_URL}/ai/analyze-health`, {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}` },
-            body: formData
-        }).then(res => res.json());
-    },
+    analyzeCropHealth: (formData) => apiRequest('/ai/analyze-health', {
+        method: 'POST',
+        body: formData
+    }),
     generateVoice: (text) => {
         const token = localStorage.getItem('access_token');
         return fetch(`${BASE_URL}/ai/tts`, {

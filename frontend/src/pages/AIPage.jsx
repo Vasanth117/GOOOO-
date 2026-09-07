@@ -5,7 +5,7 @@ import {
     Wind, CloudRain, ShieldCheck, Zap, AlertTriangle, 
     ChevronRight, Sparkles, Sprout, Brain, BarChart, 
     Image as ImageIcon, Upload, Info, CheckCircle2,
-    Activity, Microscope, Search, Loader2, User
+    Activity, Microscope, Search, Loader2, User, Globe, MapPin
 } from 'lucide-react';
 
 // ─────────────────────────────────────────
@@ -41,10 +41,19 @@ const QUICK_ACTIONS = [
 import { apiService } from '../services/apiService';
 import { useAuth } from '../context/AuthContext';
 
+const SUGGESTIONS_BY_LANG = {
+    'Tamil': ["என்ன பயிர்கள் நடலாம்?", "இன்றைய வானிலை ஆலோசனை", "இயற்கை உரக் குறிப்புகள்"],
+    'Hindi': ["कौन सी फसल लगानी चाहिए?", "आज का मौसम परामर्श", "जैविक खेती के सुझाव"],
+    'Telugu': ["ఏ పంటలు వేయాలి?", "నేటి వాతావరణ సలహా", "సేంద్రీయ సాగు చిట్కాలు"],
+    'Kannada': ["ಯಾವ ಬೆಳೆಗಳನ್ನು ಬೆಳೆಯಬೇಕು?", "ಇಂದಿನ ಹವಾಮಾನ ಸಲಹೆ", "ಸಾವಯವ ಕೃಷಿ ಸಲಹೆಗಳು"],
+    'Marathi': ["कोणती पिके लावावीत?", "आजचा हवामान सल्ला", "सेंद्रिय शेती टिप्स"],
+    'English': ["What crops should I plant?", "Current weather advice", "Organic growth tips"]
+};
+
 const AIPage = () => {
     const { user } = useAuth();
     const [messages, setMessages] = useState([]);
-    const [onboardingStep, setOnboardingStep] = useState(0); // 0: detecting location, 1: asking farm size, 2: asking soil type, 3: completed
+    const [onboardingStep, setOnboardingStep] = useState(0);
     
     const [input, setInput] = useState('');
     const [isTyping, setIsTyping] = useState(false);
@@ -53,29 +62,66 @@ const AIPage = () => {
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [suggestions, setSuggestions] = useState([]);
 
+    const [language, setLanguage] = useState(user?.preferences?.language || 'English');
+    const [locationName, setLocationName] = useState(
+        user?.farm_profile?.location?.name || 'Kondampatty'
+    );
+
     const chatEndRef = useRef(null);
     const audioRef = useRef(new Audio());
     const fileInputRef = useRef(null);
 
-    // ── AUTO LOCATION ──
+    // ── AUTO LOCATION & USER PREFS ──
     const [location, setLocation] = useState(null);
     
     useEffect(() => {
+        if (user?.preferences?.language) {
+            setLanguage(user.preferences.language);
+        }
+        if (user?.farm_profile?.location?.name) {
+            setLocationName(user.farm_profile.location.name);
+        } else if (user?.farm_profile?.location?.latitude && user?.farm_profile?.location?.longitude) {
+            const { latitude, longitude } = user.farm_profile.location;
+            fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`)
+                .then(r => r.json())
+                .then(j => {
+                    const n = j.address?.village || j.address?.town || j.address?.city || j.address?.state;
+                    if (n) setLocationName(n);
+                })
+                .catch(() => {});
+        }
+    }, [user]);
+
+    useEffect(() => {
+        const activeLang = user?.preferences?.language || language || 'English';
+        const langSuggestions = SUGGESTIONS_BY_LANG[activeLang] || SUGGESTIONS_BY_LANG['English'];
+
         if (user?.farm_profile) {
+            const isTamil = activeLang === 'Tamil';
+            const welcomeText = isTamil
+                ? `வணக்கம் ${user.name}! உங்கள் பண்ணையான ${user.farm_profile.farm_name}-ன் விவரங்கள் (${locationName}) என்னிடம் உள்ளன. இன்று உங்களுக்கு நான் எவ்வாறு உதவ முடியும்?`
+                : `Welcome back, ${user.name}! I have your farm details from ${user.farm_profile.farm_name} in ${locationName}. How can I assist you today?`;
+
             setMessages([{ 
                 role: 'ai', 
-                text: `Welcome back, ${user.name}! I have your farm details from ${user.farm_profile.farm_name}. How can I assist you today?` 
+                text: welcomeText
             }]);
             setOnboardingStep(3);
-            setSuggestions(["What crops should I plant?", "Current weather advice", "Organic growth tips"]);
+            setSuggestions(langSuggestions);
             return;
         }
 
         const detect = async () => {
             navigator.geolocation.getCurrentPosition(
-                (pos) => {
+                async (pos) => {
                     const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
                     setLocation(loc);
+                    try {
+                        const r = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${loc.lat}&lon=${loc.lng}&format=json`);
+                        const j = await r.json();
+                        const n = j.address?.village || j.address?.town || j.address?.city || j.address?.state;
+                        if (n) setLocationName(n);
+                    } catch {}
                     setMessages([{ 
                         role: 'ai', 
                         text: `Namaste ${user?.name || 'Farmer'}! I've detected your location. To give you accurate advice, I need two details: What is your Farm Size (in acres)?` 
@@ -93,7 +139,27 @@ const AIPage = () => {
             );
         };
         detect();
-    }, [user?.name]);
+    }, [user?.name, locationName]);
+
+    const handleLanguageChange = async (newLang) => {
+        setLanguage(newLang);
+        const newSugg = SUGGESTIONS_BY_LANG[newLang] || SUGGESTIONS_BY_LANG['English'];
+        setSuggestions(newSugg);
+        try {
+            await apiService.updatePreferences({ language: newLang });
+        } catch (err) {
+            console.warn("Failed to auto-save language preference:", err);
+        }
+        const confirmMap = {
+            'Tamil': '🌐 மொழி தமிழுக்கு மாற்றப்பட்டது. உங்கள் கேள்விகளைத் தமிழில் கேட்கலாம்!',
+            'Hindi': '🌐 भाषा बदलकर हिंदी कर दी गई है। आप अपने सवाल हिंदी में पूछ सकते हैं।',
+            'Telugu': '🌐 భాష తెలుగుకు మార్చబడింది. మీ ప్రశ్నలను తెలుగులో అడగవచ్చు.',
+            'Kannada': '🌐 ಭಾಷೆಯನ್ನು ಕನ್ನಡಕ್ಕೆ ಬದಲಾಯಿಸಲಾಗಿದೆ.',
+            'Marathi': '🌐 भाषा मराठीत बदलली आहे.',
+            'English': '🌐 Language switched to English. How can I assist you today?'
+        };
+        setMessages(prev => [...prev, { role: 'ai', text: confirmMap[newLang] || `🌐 Language switched to ${newLang}.` }]);
+    };
 
     const scrollToBottom = () => {
         chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -114,6 +180,8 @@ const AIPage = () => {
         // 💬 ACTUAL ADVISOR API CALL
         try {
             const data = await apiService.askAdvisor(text, { 
+                language,
+                location_name: locationName,
                 location,
                 user_name: user?.name,
                 farm_profile: user?.farm_profile
@@ -152,7 +220,15 @@ const AIPage = () => {
         }
 
         const recognition = new SpeechRecognition();
-        recognition.lang = 'en-IN'; // Or use user's locale
+        const langCodes = {
+            'Tamil': 'ta-IN',
+            'Hindi': 'hi-IN',
+            'Telugu': 'te-IN',
+            'Kannada': 'kn-IN',
+            'Marathi': 'mr-IN',
+            'English': 'en-IN'
+        };
+        recognition.lang = langCodes[language] || 'en-IN';
         recognition.onstart = () => setIsListening(true);
         recognition.onresult = (event) => {
             const transcript = event.results[0][0].transcript;
@@ -179,7 +255,7 @@ const AIPage = () => {
 
         try {
             const res = await apiService.analyzeCropHealth(formData);
-            const data = res.data;
+            const data = res?.data || res;
             setAnalysis(data);
 
             if (!data.is_valid_plant) {
@@ -212,10 +288,64 @@ const AIPage = () => {
                         <div className="pulse-circle" />
                         <div>
                             <div className="status-title">GOO AI Advisor</div>
-                            <div className="status-sub">{isTyping ? 'Thinking...' : 'Ready to help'}</div>
+                            <div className="status-sub">{isTyping ? 'Thinking...' : 'Council of 5 AI Agents Active'}</div>
                         </div>
                     </div>
-                    {location && <div className="location-badge">{location.lat.toFixed(2)}, {location.lng.toFixed(2)}</div>}
+                    <div className="ai-header-controls" style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                        <div 
+                            className="location-badge" 
+                            title="Detected Farm Location" 
+                            style={{ 
+                                display: 'flex', 
+                                alignItems: 'center', 
+                                gap: '5px', 
+                                background: 'rgba(34, 197, 94, 0.12)', 
+                                color: '#15803d', 
+                                border: '1px solid rgba(34, 197, 94, 0.3)', 
+                                padding: '4px 10px', 
+                                borderRadius: '16px', 
+                                fontSize: '0.8rem', 
+                                fontWeight: 700 
+                            }}
+                        >
+                            <MapPin size={13} color="#16a34a" /> {locationName || 'Kondampatty'}
+                        </div>
+                        <div 
+                            className="lang-selector-badge" 
+                            style={{ 
+                                display: 'flex', 
+                                alignItems: 'center', 
+                                gap: '5px', 
+                                background: '#f8fafc', 
+                                border: '1px solid #cbd5e1', 
+                                padding: '3px 8px', 
+                                borderRadius: '16px',
+                                boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                            }}
+                        >
+                            <Globe size={13} color="#0f766e" />
+                            <select 
+                                value={language} 
+                                onChange={(e) => handleLanguageChange(e.target.value)}
+                                style={{ 
+                                    background: 'transparent', 
+                                    border: 'none', 
+                                    outline: 'none', 
+                                    fontSize: '0.8rem', 
+                                    fontWeight: 700, 
+                                    color: '#0f766e', 
+                                    cursor: 'pointer' 
+                                }}
+                            >
+                                <option value="English">English</option>
+                                <option value="Tamil">தமிழ் (Tamil)</option>
+                                <option value="Hindi">हिन्दी (Hindi)</option>
+                                <option value="Telugu">తెలుగు (Telugu)</option>
+                                <option value="Kannada">ಕನ್ನಡ (Kannada)</option>
+                                <option value="Marathi">मराठी (Marathi)</option>
+                            </select>
+                        </div>
+                    </div>
                 </header>
 
                 <div className="chat-messages">

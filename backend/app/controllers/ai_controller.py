@@ -26,18 +26,25 @@ async def get_advisor_advice(user: User, data: AdvisorChatRequest) -> dict:
         farm_ctx = jsonable_encoder(farm.model_dump(exclude={"id", "revision_id"}))
         farm_ctx["id"] = str(farm.id)
 
+    # Check language requested via external context or user preferences
+    req_context = data.context or {}
+    lang_pref = req_context.get("language") or (user.preferences or {}).get("language", "English")
+
     context = {
         "user_name": user.name,
         "farm_profile": farm_ctx,
         "preferences": user.preferences or {},
-        "external_data": data.context or {}
+        "language": lang_pref,
+        "external_data": req_context
     }
 
-    # Fetch weather if intent usually needs it
+    # Fetch weather and resolve true farm village/city name
     if farm and farm.location:
         lat, lon = farm.location.latitude, farm.location.longitude
-        weather_ctx = await weather_service.get_weather_data(lat, lon)
+        loc_hint = getattr(farm.location, "name", None) or farm_ctx.get("location", {}).get("name") or req_context.get("location_name")
+        weather_ctx = await weather_service.get_weather_data(lat, lon, location_hint=loc_hint)
         context["current_weather"] = weather_ctx
+        context["farm_location"] = weather_ctx.get("location_name") or loc_hint or "Kondampatty"
 
     return await ai_service.get_farming_advice(data.message, context)
 

@@ -87,11 +87,15 @@ const SettingsPage = () => {
                     farming_practices: f.farming_practices || '',
                 });
                 const loc = f.location;
-                if (loc?.latitude && loc?.longitude) {
+                if (loc?.name) {
+                    setLocationName(loc.name);
+                } else if (loc?.latitude && loc?.longitude) {
                     try {
                         const r = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${loc.latitude}&lon=${loc.longitude}&format=json`);
                         const j = await r.json();
-                        setLocationName(j.address?.city || j.address?.town || j.address?.village || j.address?.state || 'Location detected');
+                        const n = j.address?.village || j.address?.town || j.address?.city || j.address?.state || 'Location detected';
+                        setLocationName(n);
+                        apiService.updateFarm({ location: { latitude: loc.latitude, longitude: loc.longitude, name: n } }).catch(() => {});
                     } catch { setLocationName('Location detected'); }
                 }
             }
@@ -112,10 +116,15 @@ const SettingsPage = () => {
             async (pos) => {
                 const { latitude, longitude } = pos.coords;
                 try {
-                    await apiService.updateFarm({ location: { latitude, longitude } });
-                    const r = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`);
-                    const j = await r.json();
-                    const name = j.address?.city || j.address?.town || j.address?.village || j.address?.state || 'Your Location';
+                    let name = 'Your Location';
+                    try {
+                        const r = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`);
+                        const j = await r.json();
+                        name = j.address?.village || j.address?.town || j.address?.city || j.address?.state || 'Your Location';
+                    } catch (err) {
+                        console.warn("Reverse geocoding error:", err);
+                    }
+                    await apiService.updateFarm({ location: { latitude, longitude, name } });
                     setLocationName(name);
                     showToast(`📍 Location set to ${name}`);
                     await loadData();
@@ -192,6 +201,7 @@ const SettingsPage = () => {
         setSaving(true);
         try {
             await apiService.updatePreferences(aiPrefs);
+            if (typeof refreshUser === 'function') await refreshUser();
             showToast('AI preferences saved! The advisor will use these next session.');
         } catch { showToast('Failed to save.', 'error'); }
         finally { setSaving(false); }

@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends, Body, File, UploadFile, Response, Form
 from app.schemas.ai_schema import AdvisorChatRequest, CropRecommendationRequest, TTSRequest
 from app.controllers import ai_controller
-from app.middleware.auth_middleware import get_current_user, require_farmer
+from typing import Optional
+from app.middleware.auth_middleware import get_current_user, get_current_user_optional, require_farmer
 from app.models.user import User
 from app.utils.response_utils import success_response, error_response
 
@@ -24,7 +25,7 @@ async def chat_with_advisor(
 async def analyze_crop_health(
     file: UploadFile = File(...),
     query: str = Form(None),
-    current_user: User = Depends(get_current_user),
+    current_user: Optional[User] = Depends(get_current_user_optional),
 ):
     """
     Analyzes an image of a plant for diseases and provides organic safety advice.

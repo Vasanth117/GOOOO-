@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Bot, Mic, Send, Camera, Thermometer, Droplets, 
@@ -140,6 +141,26 @@ const AIPage = () => {
         };
         detect();
     }, [user?.name, locationName]);
+
+    const locationRouter = useLocation();
+    const hasTriggeredHardwareAdvisory = useRef(false);
+
+    useEffect(() => {
+        if (locationRouter.state?.hardwareData && !hasTriggeredHardwareAdvisory.current) {
+            hasTriggeredHardwareAdvisory.current = true;
+            const data = locationRouter.state.hardwareData;
+            
+            let query = `My farm sensors currently read: Temperature: ${data.temperature || '--'}°C, Humidity: ${data.humidity || '--'}%, Soil Moisture: ${data.soilMoisture || '--'}%. `;
+            if (data.temperature > 40 || data.humidity > 80 || data.soilMoisture > 80) {
+                query += "Some values are quite high. ";
+            }
+            query += "Can you provide a quick agronomy advisory based on this real-time data?";
+            
+            setTimeout(() => {
+                handleSend(null, query);
+            }, 500);
+        }
+    }, [locationRouter.state]);
 
     const handleLanguageChange = async (newLang) => {
         setLanguage(newLang);

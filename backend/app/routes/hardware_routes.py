@@ -3,6 +3,8 @@ from app.schemas.sensor_data import SensorPayload
 from app.models.sensor_data import SensorData
 from app.models.farm_profile import FarmProfile
 from datetime import datetime
+import asyncio
+from app.websocket import manager
 
 router = APIRouter(tags=["Hardware IoT"])
 
@@ -37,6 +39,22 @@ async def receive_telemetry(payload: SensorPayload):
         recorded_at=datetime.utcnow()
     )
     await sensor_record.insert()
+    
+    # Broadcast to websocket clients in the background
+    broadcast_data = {
+        "deviceId": payload.farm_profile_id,
+        "timestamp": sensor_record.recorded_at.isoformat(),
+        "temperature": sensor_record.temperature_c,
+        "humidity": sensor_record.humidity_percent,
+        "soilMoisture": sensor_record.moisture_percent,
+        # Default/mock values for missing fields as per the prompt requirements
+        "soilPH": 6.7,
+        "light": 800,
+        "rain": False,
+        "battery": 90,
+        "signalStrength": -60
+    }
+    asyncio.create_task(manager.broadcast(broadcast_data))
     
     return {"status": "success", "message": "Telemetry data recorded successfully"}
 

@@ -15,6 +15,8 @@ import SellerDashboard from './pages/marketplace/SellerDashboard'
 import MessagesPage from './pages/MessagesPage'
 import CameraPage from './pages/CameraPage'
 import FieldMapPage from './pages/FieldMapPage'
+import DashboardPage from './pages/DashboardPage'
+import { SensorProvider } from './context/SensorContext'
 import DashboardLayout from './components/DashboardLayout'
 import { PublicRoute, PrivateRoute, AdminRoute } from './components/ProtectedRoute'
 import { Construction } from 'lucide-react'
@@ -39,6 +41,11 @@ function App() {
         <Route path="/marketplace/dashboard" element={<SellerDashboard />} />
         <Route path="/messages"    element={<MessagesPage />} />
         <Route path="/settings"    element={<SettingsPage />} />
+        <Route path="/hardware"    element={
+            <SensorProvider>
+                <DashboardPage />
+            </SensorProvider>
+        } />
         <Route path="/profile/:userId?" element={<ProfilePage />} />
       </Route>
 

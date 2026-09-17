@@ -59,7 +59,7 @@ const LeaderboardPage = () => {
                         const isFirst = leader.rank === 1;
                         return (
                             <motion.div 
-                                key={leader.id}
+                                key={leader.id || leader._id || leader.user_id || `podium-${i}`}
                                 className={`podium-spot spot-${leader.rank}`}
                                 initial={{ opacity: 0, y: 50 }}
                                 animate={{ opacity: 1, y: 0 }}
@@ -129,7 +129,7 @@ const LeaderboardPage = () => {
                     <div className="list-items">
                         {others.map((leader, i) => (
                             <motion.div 
-                                key={leader.id} 
+                                key={leader.id || leader._id || leader.user_id || `leader-${i}`} 
                                 className={`list-item ${leader.isUser ? 'user-highlight' : ''}`}
                                 initial={{ opacity: 0, x: -20 }}
                                 animate={{ opacity: 1, x: 0 }}

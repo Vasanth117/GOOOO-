@@ -284,3 +284,6 @@ export const apiService = {
         return data.data; // { url: '...' }
     }
 };
+
+export default apiService;
+

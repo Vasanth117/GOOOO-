@@ -7,8 +7,7 @@ import {
     Thermometer, Droplets, Wind, Activity, Zap, ShieldCheck, Cpu, CloudRain, Sun, Battery, Wifi, Brain,
     Bug, X, AlertTriangle, CheckCircle2, TrendingUp, Leaf, ShieldAlert, Sparkles
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import apiService from '../services/apiService';
+import { apiService } from '../services/apiService';
 
 // ─── RISK GAUGE COMPONENT ───────────────────────────────────────
 const RiskGauge = ({ score, level }) => {

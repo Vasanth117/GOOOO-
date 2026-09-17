@@ -19,8 +19,10 @@ async def run_leaderboard_refresh():
     farms: List[FarmProfile] = await FarmProfile.find_all().to_list()
 
     # Build lookup: farmer_id → user name
-    user_ids = [f.farmer_id for f in farms]
-    users = await User.find(User.id.in_(user_ids)).to_list() if user_ids else []
+    from beanie.operators import In
+    from bson import ObjectId
+    user_ids = [ObjectId(f.farmer_id) for f in farms if ObjectId.is_valid(f.farmer_id)]
+    users = await User.find(In(User.id, user_ids)).to_list() if user_ids else []
     user_map = {str(u.id): u.name for u in users}
 
     # Sort by sustainability score

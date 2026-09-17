@@ -16,9 +16,10 @@ async def run_mission_expiry_check():
     now = datetime.utcnow()
 
     # Find active/in-progress missions that have passed expiry
+    from beanie.operators import In, LTE
     expired_missions: List[MissionProgress] = await MissionProgress.find(
-        MissionProgress.expires_at <= now,
-        MissionProgress.status.in_([MissionStatus.ACTIVE, MissionStatus.IN_PROGRESS]),
+        LTE(MissionProgress.expires_at, now),
+        In(MissionProgress.status, [MissionStatus.ACTIVE, MissionStatus.IN_PROGRESS]),
     ).to_list()
 
     daily_miss_farmers = set()

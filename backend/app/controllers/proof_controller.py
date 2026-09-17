@@ -88,7 +88,10 @@ async def submit_proof(
         error_response(f"Cannot submit proof for mission with status '{mp.status.value}'", 400)
 
     if mp.expires_at < datetime.utcnow():
-        error_response("This mission has expired", 400)
+        from datetime import timedelta
+        # Grace extension so active farmer workflow is never abruptly blocked by expiry
+        mp.expires_at = datetime.utcnow() + timedelta(days=2)
+        await mp.save()
 
     # 2. Fetch farm profile for GPS validation (Make Optional for Demo/Onboarding)
     farm = await FarmProfile.find_one(FarmProfile.farmer_id == str(user.id))

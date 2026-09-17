@@ -260,6 +260,12 @@ export const apiService = {
     // Hardware
     getTelemetry: (farmProfileId, limit = 10) => apiRequest(`/hardware/telemetry/${farmProfileId}?limit=${limit}`),
 
+    // Disease Risk Forecasting
+    getDiseaseRiskAssessment: (data) => apiRequest('/disease-risk/assess', {
+        method: 'POST',
+        body: JSON.stringify(data)
+    }),
+
     // Notifications
     getNotifications: () => apiRequest('/notifications/'),
     markNotificationRead: (id) => apiRequest(`/notifications/${id}/read`, { method: 'PATCH' }),

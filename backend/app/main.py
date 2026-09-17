@@ -30,6 +30,9 @@ from app.routes import admin_routes
 # ─── Hardware Routes ─────────────────────────────────────────
 from app.routes import hardware_routes
 
+# ─── Disease Risk Forecasting ────────────────────────────────
+from app.routes import disease_risk_routes
+
 # ─── User Profile Routes ─────────────────────────────────────
 from app.routes import user_routes, chat_routes
 
@@ -190,6 +193,9 @@ app.include_router(admin_routes.router, prefix=API_PREFIX)
 
 # Hardware IoT
 app.include_router(hardware_routes.router, prefix=API_PREFIX)
+
+# Disease Risk Forecasting
+app.include_router(disease_risk_routes.router, prefix=API_PREFIX)
 
 # User Profile
 app.include_router(user_routes.router, prefix=API_PREFIX)

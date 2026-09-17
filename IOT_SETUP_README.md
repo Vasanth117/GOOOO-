@@ -1,3 +1,4 @@
+
 # GOO Platform - Real-Time IoT Sensor Monitoring System
 
 This document outlines the setup and architecture for the Real-Time IoT Sensor Monitoring System integrating an ESP32 hardware node, FastAPI backend, and React frontend over WebSockets.
